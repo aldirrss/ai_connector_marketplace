@@ -1,0 +1,412 @@
+[
+  {
+    "id": "filesystem",
+    "name": "Filesystem MCP",
+    "author": "Anthropic",
+    "version": "1.0.0",
+    "description": "Read and write files in allowed directories on your local machine.",
+    "long_description": "Gives Claude secure, sandboxed access to your filesystem. You can specify which directories are accessible. Supports read, write, move, copy, and delete operations.",
+    "transport": "npm",
+    "install_type": "npx",
+    "package": "@modelcontextprotocol/server-filesystem",
+    "install_cmd": "npx @modelcontextprotocol/server-filesystem {allowed_dir}",
+    "config_schema": {
+      "allowed_dir": {
+        "type": "string",
+        "label": "Allowed Directory",
+        "placeholder": "/home/user/documents",
+        "required": true,
+        "description": "Absolute path to directory Claude is allowed to access"
+      }
+    },
+    "claude_config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "{allowed_dir}"]
+    },
+    "tags": ["files", "dev", "official"],
+    "category": "dev_tools",
+    "stars": 4.8,
+    "official": true,
+    "free": true,
+    "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
+    "icon": "ti-folder"
+  },
+  {
+    "id": "github",
+    "name": "GitHub MCP",
+    "author": "GitHub",
+    "version": "1.2.0",
+    "description": "Access repositories, issues, PRs, and code search directly from Claude.",
+    "long_description": "Full GitHub integration. Create issues, review PRs, search code, commit files, manage branches — all via natural language with Claude.",
+    "transport": "npm",
+    "install_type": "npx",
+    "package": "@modelcontextprotocol/server-github",
+    "install_cmd": "npx @modelcontextprotocol/server-github",
+    "config_schema": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": {
+        "type": "secret",
+        "label": "GitHub Personal Access Token",
+        "placeholder": "ghp_xxxxxxxxxxxx",
+        "required": true,
+        "description": "Generate at github.com/settings/tokens with repo scope"
+      }
+    },
+    "claude_config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "{GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "tags": ["dev", "vcs", "official"],
+    "category": "dev_tools",
+    "stars": 4.8,
+    "official": true,
+    "free": true,
+    "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/github",
+    "icon": "ti-brand-github"
+  },
+  {
+    "id": "postgres",
+    "name": "PostgreSQL MCP",
+    "author": "Anthropic",
+    "version": "1.0.0",
+    "description": "Query and inspect PostgreSQL databases using natural language.",
+    "long_description": "Connect Claude to your PostgreSQL database. Run queries, inspect schemas, analyze data, and generate reports — all through conversation.",
+    "transport": "pip",
+    "install_type": "pip",
+    "package": "mcp-server-postgres",
+    "install_cmd": "pip install mcp-server-postgres",
+    "config_schema": {
+      "connection_string": {
+        "type": "secret",
+        "label": "Connection String",
+        "placeholder": "postgresql://user:password@localhost:5432/dbname",
+        "required": true,
+        "description": "Full PostgreSQL connection string"
+      }
+    },
+    "claude_config": {
+      "command": "python",
+      "args": ["-m", "mcp_server_postgres", "{connection_string}"]
+    },
+    "tags": ["database", "sql", "official"],
+    "category": "database",
+    "stars": 4.6,
+    "official": true,
+    "free": true,
+    "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/postgres",
+    "icon": "ti-database"
+  },
+  {
+    "id": "sqlite",
+    "name": "SQLite MCP",
+    "author": "Anthropic",
+    "version": "1.0.0",
+    "description": "Query and manage local SQLite databases with Claude.",
+    "long_description": "Access and manage SQLite database files on your local machine. Ideal for local development, embedded databases, and quick data analysis.",
+    "transport": "pip",
+    "install_type": "uvx",
+    "package": "mcp-server-sqlite",
+    "install_cmd": "uvx mcp-server-sqlite --db-path {db_path}",
+    "config_schema": {
+      "db_path": {
+        "type": "string",
+        "label": "Database File Path",
+        "placeholder": "/home/user/data.db",
+        "required": true,
+        "description": "Absolute path to your SQLite .db file"
+      }
+    },
+    "claude_config": {
+      "command": "uvx",
+      "args": ["mcp-server-sqlite", "--db-path", "{db_path}"]
+    },
+    "tags": ["database", "sql", "official"],
+    "category": "database",
+    "stars": 4.5,
+    "official": true,
+    "free": true,
+    "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/sqlite",
+    "icon": "ti-database"
+  },
+  {
+    "id": "brave-search",
+    "name": "Brave Search MCP",
+    "author": "Anthropic",
+    "version": "1.0.0",
+    "description": "Web and local search via Brave Search API.",
+    "long_description": "Give Claude the ability to search the web using Brave Search. Supports both web search and local search for nearby places.",
+    "transport": "npm",
+    "install_type": "npx",
+    "package": "@modelcontextprotocol/server-brave-search",
+    "install_cmd": "npx @modelcontextprotocol/server-brave-search",
+    "config_schema": {
+      "BRAVE_API_KEY": {
+        "type": "secret",
+        "label": "Brave API Key",
+        "placeholder": "BSAxxxxxxxxxxxxxxxxx",
+        "required": true,
+        "description": "Get free API key at api.search.brave.com"
+      }
+    },
+    "claude_config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "{BRAVE_API_KEY}"
+      }
+    },
+    "tags": ["search", "ai", "official"],
+    "category": "ai_search",
+    "stars": 4.3,
+    "official": true,
+    "free": false,
+    "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search",
+    "icon": "ti-world"
+  },
+  {
+    "id": "puppeteer",
+    "name": "Puppeteer MCP",
+    "author": "Anthropic",
+    "version": "1.0.0",
+    "description": "Browser automation, screenshots, and web scraping with Claude.",
+    "long_description": "Control a headless Chromium browser via Claude. Take screenshots, fill forms, scrape data, test web apps — all through conversation.",
+    "transport": "npm",
+    "install_type": "npx",
+    "package": "@modelcontextprotocol/server-puppeteer",
+    "install_cmd": "npx @modelcontextprotocol/server-puppeteer",
+    "config_schema": {},
+    "claude_config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "tags": ["automation", "dev", "browser", "official"],
+    "category": "dev_tools",
+    "stars": 4.5,
+    "official": true,
+    "free": true,
+    "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/puppeteer",
+    "icon": "ti-browser"
+  },
+  {
+    "id": "slack",
+    "name": "Slack MCP",
+    "author": "Community",
+    "version": "1.0.0",
+    "description": "Read messages, post to channels, and manage Slack workspaces.",
+    "long_description": "Integrate Claude with your Slack workspace. Read channel history, post messages, search conversations, and manage workspace data.",
+    "transport": "sse",
+    "install_type": "url",
+    "package": null,
+    "install_cmd": null,
+    "config_schema": {
+      "SLACK_BOT_TOKEN": {
+        "type": "secret",
+        "label": "Slack Bot Token",
+        "placeholder": "xoxb-xxxxxxxxxxxx",
+        "required": true,
+        "description": "Create a Slack app at api.slack.com and get Bot Token"
+      },
+      "SLACK_TEAM_ID": {
+        "type": "string",
+        "label": "Team/Workspace ID",
+        "placeholder": "T0XXXXXXX",
+        "required": true,
+        "description": "Found in Slack workspace settings"
+      }
+    },
+    "claude_config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "{SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "{SLACK_TEAM_ID}"
+      }
+    },
+    "tags": ["communication", "official"],
+    "category": "communication",
+    "stars": 4.1,
+    "official": true,
+    "free": true,
+    "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/slack",
+    "icon": "ti-brand-slack"
+  },
+  {
+    "id": "google-drive",
+    "name": "Google Drive MCP",
+    "author": "Google",
+    "version": "1.0.0",
+    "description": "Read, search, and manage Google Drive files from Claude.",
+    "long_description": "Access your Google Drive directly from Claude. Read documents, search files, list folders, and interact with Google Docs, Sheets, and Slides.",
+    "transport": "sse",
+    "install_type": "url",
+    "package": null,
+    "install_cmd": null,
+    "config_schema": {},
+    "claude_config": {
+      "url": "https://drivemcp.googleapis.com/mcp"
+    },
+    "tags": ["files", "communication", "official"],
+    "category": "communication",
+    "stars": 4.4,
+    "official": true,
+    "free": true,
+    "homepage": "https://developers.google.com/workspace/mcp",
+    "icon": "ti-brand-google-drive"
+  },
+  {
+    "id": "excalidraw",
+    "name": "Excalidraw MCP",
+    "author": "Excalidraw",
+    "version": "1.0.0",
+    "description": "Create and edit hand-drawn style diagrams with Claude.",
+    "long_description": "Let Claude generate Excalidraw diagrams, flowcharts, and wireframes. Export diagrams and open them directly in Excalidraw.",
+    "transport": "sse",
+    "install_type": "url",
+    "package": null,
+    "install_cmd": null,
+    "config_schema": {},
+    "claude_config": {
+      "url": "https://mcp.excalidraw.com/mcp"
+    },
+    "tags": ["design", "dev", "diagrams"],
+    "category": "dev_tools",
+    "stars": 4.2,
+    "official": false,
+    "free": true,
+    "homepage": "https://excalidraw.com",
+    "icon": "ti-pencil"
+  },
+  {
+    "id": "redis",
+    "name": "Redis MCP",
+    "author": "Community",
+    "version": "0.9.0",
+    "description": "Interact with Redis cache — get, set, delete, scan keys.",
+    "long_description": "Connect Claude to a Redis instance. Inspect cache contents, set/get/delete keys, scan patterns, and monitor TTLs via conversation.",
+    "transport": "pip",
+    "install_type": "pip",
+    "package": "mcp-server-redis",
+    "install_cmd": "pip install mcp-server-redis",
+    "config_schema": {
+      "REDIS_URL": {
+        "type": "secret",
+        "label": "Redis URL",
+        "placeholder": "redis://localhost:6379",
+        "required": true,
+        "description": "Redis connection URL including auth if required"
+      }
+    },
+    "claude_config": {
+      "command": "python",
+      "args": ["-m", "mcp_server_redis"],
+      "env": {
+        "REDIS_URL": "{REDIS_URL}"
+      }
+    },
+    "tags": ["database", "cache"],
+    "category": "database",
+    "stars": 4.0,
+    "official": false,
+    "free": true,
+    "homepage": "https://github.com/modelcontextprotocol/servers",
+    "icon": "ti-server"
+  },
+  {
+    "id": "grafana",
+    "name": "Grafana MCP",
+    "author": "Community",
+    "version": "0.8.0",
+    "description": "Query Grafana dashboards and metrics from Claude.",
+    "long_description": "Access Grafana metrics, dashboards, and alerts. Ask Claude to summarize metrics, detect anomalies, and create Grafana panels.",
+    "transport": "docker",
+    "install_type": "docker",
+    "package": "mcp-grafana",
+    "install_cmd": "docker run -p 3001:3001 -e GRAFANA_URL={GRAFANA_URL} -e GRAFANA_API_KEY={GRAFANA_API_KEY} mcp-grafana",
+    "config_schema": {
+      "GRAFANA_URL": {
+        "type": "string",
+        "label": "Grafana URL",
+        "placeholder": "http://localhost:3000",
+        "required": true,
+        "description": "Base URL of your Grafana instance"
+      },
+      "GRAFANA_API_KEY": {
+        "type": "secret",
+        "label": "Grafana API Key",
+        "placeholder": "eyJrIjoixxxxxxxxxx",
+        "required": true,
+        "description": "Generate in Grafana under Settings > API Keys"
+      }
+    },
+    "claude_config": {
+      "command": "docker",
+      "args": ["run", "-p", "3001:3001", "-e", "GRAFANA_URL={GRAFANA_URL}", "-e", "GRAFANA_API_KEY={GRAFANA_API_KEY}", "mcp-grafana"]
+    },
+    "tags": ["monitoring", "data"],
+    "category": "database",
+    "stars": 3.9,
+    "official": false,
+    "free": true,
+    "homepage": "https://github.com/modelcontextprotocol/servers",
+    "icon": "ti-chart-line"
+  },
+  {
+    "id": "odoo-local",
+    "name": "Odoo Local MCP",
+    "author": "Lemacore",
+    "version": "1.0.0",
+    "description": "Access Odoo models, records, and business logic via XML-RPC.",
+    "long_description": "Connect Claude directly to your local or remote Odoo instance. Read records, execute methods, and automate ERP workflows with natural language.",
+    "transport": "http",
+    "install_type": "url",
+    "package": null,
+    "install_cmd": null,
+    "config_schema": {
+      "ODOO_URL": {
+        "type": "string",
+        "label": "Odoo URL",
+        "placeholder": "http://localhost:8069",
+        "required": true,
+        "description": "Base URL of your Odoo instance"
+      },
+      "ODOO_DB": {
+        "type": "string",
+        "label": "Database Name",
+        "placeholder": "odoo18_dev",
+        "required": true,
+        "description": "Odoo database name"
+      },
+      "ODOO_USER": {
+        "type": "string",
+        "label": "Username",
+        "placeholder": "admin",
+        "required": true,
+        "description": "Odoo login email or username"
+      },
+      "ODOO_PASSWORD": {
+        "type": "secret",
+        "label": "Password / API Key",
+        "placeholder": "your_api_key",
+        "required": true,
+        "description": "Odoo password or API key (Settings > Technical > API Keys)"
+      }
+    },
+    "claude_config": {
+      "url": "{ODOO_URL}/mcp",
+      "env": {
+        "ODOO_DB": "{ODOO_DB}",
+        "ODOO_USER": "{ODOO_USER}",
+        "ODOO_PASSWORD": "{ODOO_PASSWORD}"
+      }
+    },
+    "tags": ["erp", "odoo", "local"],
+    "category": "dev_tools",
+    "stars": 4.9,
+    "official": false,
+    "free": true,
+    "homepage": "https://lemacore.com",
+    "icon": "ti-building-store"
+  }
+]
