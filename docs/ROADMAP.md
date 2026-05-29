@@ -22,24 +22,25 @@ The foundation: a FastAPI backend that can read the MCP registry, install MCPs v
 
 ---
 
-## Phase 2 — Frontend UI 🔜 NEXT
+## Phase 2 — Frontend UI ✅ COMPLETE
 
-A web interface so users never touch the API directly. This is the priority milestone.
+A web interface so users never touch the API directly. Built in `frontend/` with
+Next.js (App Router) + Tailwind + TanStack Query. See `frontend/README.md`.
 
 ### Goals
-- [ ] Scaffold Next.js (App Router) + Tailwind in a `frontend/` directory
-- [ ] **Marketplace grid** — card per MCP, showing icon, name, transport badge, official/stars, install status
-- [ ] **Sidebar navigation** — filter by transport (npm/pip/http/sse/docker), category, and "Installed"
-- [ ] **Search bar** — live filter wired to `GET /registry/?q=`
-- [ ] **Detail panel** — slide-out on card click: long description, homepage link, transport, install command preview
-- [ ] **Install flow**:
+- [x] Scaffold Next.js (App Router) + Tailwind in a `frontend/` directory
+- [x] **Marketplace grid** — card per MCP, showing icon, name, transport badge, official/stars, install status
+- [x] **Sidebar navigation** — filter by transport (npm/pip/http/sse/docker), category, and "Installed"
+- [x] **Search bar** — live filter wired to `GET /registry/?q=`
+- [x] **Detail panel** — slide-out on card click: long description, homepage link, transport, install command preview
+- [x] **Install flow**:
   - MCPs with empty `config_schema` → one-click install
   - MCPs with `config_schema` → render a dynamic form (text/secret fields), then install
   - Secret fields use password inputs; never persisted client-side
-- [ ] **Status indicators** — installed cards show green badge; poll `GET /install/installed/all`
-- [ ] **Uninstall** — remove button on installed cards → `DELETE /install/{id}`
-- [ ] **Dependency banner** — call `GET /install/dependencies/check` on load; warn if npm/pip/docker missing
-- [ ] **Restart reminder** — after install/uninstall, show "Restart Claude Desktop to apply"
+- [x] **Status indicators** — installed cards show green badge; poll `GET /install/installed/all`
+- [x] **Uninstall** — remove button on installed cards → `DELETE /install/{id}`
+- [x] **Dependency banner** — call `GET /install/dependencies/check` on load; warn if npm/pip/docker missing
+- [x] **Restart reminder** — after install/uninstall, show "Restart Claude Desktop to apply"
 
 ### Design reference
 A mockup was created during planning — a 3-pane layout (sidebar / card grid / detail panel) styled like a polished app store. Match that direction: clean, minimal, generous whitespace.
