@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { MCPWithStatus } from "@/lib/types";
+import type { MCPWithStatus, DockerHealth } from "@/lib/types";
 import { TransportBadge } from "./TransportBadge";
 import { InstallForm } from "./InstallForm";
+import { PlatformBadges } from "./PlatformBadges";
+import { ClaudeWebGuide } from "./ClaudeWebGuide";
+import { InstallLog } from "./InstallLog";
 import { categoryLabel } from "@/lib/labels";
 
 function InstallCommandPreview({ mcp }: { mcp: MCPWithStatus }) {
@@ -29,6 +32,8 @@ export function DetailPanel({
   mcp,
   installing,
   uninstalling,
+  installLog,
+  dockerHealth,
   onClose,
   onInstall,
   onUninstall,
@@ -36,6 +41,8 @@ export function DetailPanel({
   mcp: MCPWithStatus | null;
   installing: boolean;
   uninstalling: boolean;
+  installLog: string[];
+  dockerHealth?: DockerHealth;
   onClose: () => void;
   onInstall: (values: Record<string, string>) => void;
   onUninstall: () => void;
@@ -50,6 +57,13 @@ export function DetailPanel({
   const open = mcp !== null;
   const hasConfig = mcp ? Object.keys(mcp.config_schema).length > 0 : false;
   const isRemote = mcp?.transport === "http" || mcp?.transport === "sse";
+  const webUrl = mcp?.claude_config.url ?? "";
+  const showWebGuide = !!mcp?.claude_web_compatible && !!webUrl;
+  // Block install only for docker transports when the daemon is known to be down.
+  const dockerBlocked =
+    mcp?.transport === "docker" &&
+    dockerHealth !== undefined &&
+    !dockerHealth.daemon_running;
 
   return (
     <>
@@ -117,6 +131,13 @@ export function DetailPanel({
                 )}
               </div>
 
+              <div>
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Compatible with
+                </p>
+                <PlatformBadges platforms={mcp.platforms} size="md" />
+              </div>
+
               <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
                 {mcp.long_description || mcp.description}
               </p>
@@ -156,6 +177,18 @@ export function DetailPanel({
                 </p>
               )}
 
+              {showWebGuide && <ClaudeWebGuide url={webUrl} />}
+
+              {dockerBlocked && (
+                <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <i className="ti ti-alert-triangle mt-0.5" aria-hidden />
+                  {dockerHealth?.message ??
+                    "Docker daemon is not running. Start Docker Desktop to install."}
+                </p>
+              )}
+
+              <InstallLog lines={installLog} />
+
               {showForm && hasConfig && !mcp.is_installed && (
                 <div className="rounded-xl border border-slate-200 p-4">
                   <p className="mb-3 text-sm font-medium text-slate-700">
@@ -194,8 +227,8 @@ export function DetailPanel({
                     if (hasConfig) setShowForm(true);
                     else onInstall({});
                   }}
-                  disabled={installing}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
+                  disabled={installing || dockerBlocked}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {installing ? (
                     <i className="ti ti-loader-2 animate-spin" aria-hidden />
@@ -204,9 +237,11 @@ export function DetailPanel({
                   )}
                   {installing
                     ? "Installing…"
-                    : hasConfig
-                      ? "Configure & Install"
-                      : "Install"}
+                    : dockerBlocked
+                      ? "Docker daemon offline"
+                      : hasConfig
+                        ? "Configure & Install"
+                        : "Install"}
                 </button>
               )}
             </div>

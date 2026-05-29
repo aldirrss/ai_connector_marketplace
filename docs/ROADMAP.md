@@ -52,16 +52,21 @@ A mockup was created during planning — a 3-pane layout (sidebar / card grid / 
 
 ---
 
-## Phase 3 — Remote MCPs & Claude Web Support
+## Phase 3 — Remote MCPs & Claude Web Support ✅ COMPLETE
 
 Extend beyond Claude Desktop to web-based clients.
 
-- [ ] Add `claude_web_compatible` and `platforms` fields to registry schema
-- [ ] **"Use on Claude Web" flow** — for http/sse MCPs, show the URL + a copy button + step-by-step guide (claude.ai → Settings → Integrations → paste URL). No auto-install (no API exists for this).
-- [ ] Per-platform compatibility badges on cards (Desktop / Web / Copilot / Gemini)
-- [ ] Filter: "works on Claude Web"
-- [ ] Real-time install log streaming (WebSocket or SSE) so users see npm/pip output live
-- [ ] Docker daemon health check before docker-transport installs (partially stubbed already)
+- [x] Add `claude_web_compatible` and `platforms` fields to registry schema
+- [x] **"Use on Claude Web" flow** — for http/sse MCPs, show the URL + a copy button + step-by-step guide (claude.ai → Settings → Integrations → paste URL). No auto-install (no API exists for this).
+- [x] Per-platform compatibility badges on cards (Desktop / Web / Copilot / Gemini)
+- [x] Filter: "works on Claude Web"
+- [x] Real-time install log streaming via SSE (`POST /install/stream`) so users see npm/pip/docker output live
+- [x] Docker daemon health check (`GET /install/docker/health`) gates docker-transport installs
+
+### Backend additions
+- `RegistryStats.web_compatible` count; `web_only` filter on `GET /registry/`
+- `POST /install/stream` — Server-Sent Events with `{type:"log"|"done", …}` frames
+- `GET /install/docker/health` → `{installed, daemon_running, message}`
 
 ---
 

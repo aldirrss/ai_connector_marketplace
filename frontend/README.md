@@ -66,12 +66,26 @@ frontend/
 │   ├── InstallForm.tsx   # Dynamic config form (text/secret fields)
 │   ├── DependencyBanner.tsx
 │   ├── TransportBadge.tsx
+│   ├── PlatformBadges.tsx # Desktop / Web / Copilot / Gemini compatibility
+│   ├── ClaudeWebGuide.tsx # "Use on Claude Web" copy-URL + manual guide
+│   ├── InstallLog.tsx    # Live console for streamed install output
 │   └── Toast.tsx         # Feedback + "restart Claude Desktop" reminder
 └── lib/
     ├── types.ts          # TS mirror of backend/models/mcp.py
-    ├── api.ts            # Typed fetch client for the backend
-    └── labels.ts         # Transport/category display helpers
+    ├── api.ts            # Typed fetch client (incl. SSE install stream)
+    └── labels.ts         # Transport/category/platform display helpers
 ```
+
+## Phase 3 — Remote MCPs & Claude Web
+
+- **Platform badges** on every card and in the detail panel (Desktop / Web / Copilot / Gemini).
+- **"Works on Claude Web" filter** in the sidebar (`web_only` query param).
+- **"Use on Claude Web"** section for remote (http/sse) MCPs — shows the URL, a
+  copy button, and a step-by-step manual guide (no auto-registration API exists).
+- **Live install logs** — installs stream via `POST /install/stream` (SSE) and
+  render in a console in the detail panel.
+- **Docker daemon gate** — docker-transport installs are disabled with a warning
+  when `GET /install/docker/health` reports the daemon is offline.
 
 ## API contracts
 

@@ -1,11 +1,22 @@
-from fastapi import APIRouter, HTTPException
+import json
 
-from backend.models.mcp import InstallRequest, InstallResponse, StatusResponse, InstallStatus
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+
+from backend.models.mcp import (
+    InstallRequest,
+    InstallResponse,
+    StatusResponse,
+    InstallStatus,
+    DockerHealth,
+)
 from backend.services.registry_service import get_mcp_by_id
 from backend.services.installer_service import (
     install_mcp,
+    install_mcp_stream,
     uninstall_mcp,
     check_dependencies,
+    docker_health,
     get_package_version,
 )
 from backend.core.config_manager import is_mcp_in_config, get_installed_mcp_keys
@@ -34,6 +45,47 @@ async def install(request: InstallRequest) -> InstallResponse:
         )
 
     return await install_mcp(entry, request.config_values)
+
+
+@router.post("/stream")
+async def install_stream(request: InstallRequest) -> StreamingResponse:
+    """
+    Install an MCP, streaming live progress as Server-Sent Events.
+
+    Each SSE message's `data:` is a JSON object:
+      {"type": "log", "line": "..."}                       — progress / subprocess output
+      {"type": "done", "success": bool, "message": "...",  — terminal result
+       "mcp_id": "...", "details": "..."}
+    """
+    entry = get_mcp_by_id(request.mcp_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail=f"MCP '{request.mcp_id}' not found in registry")
+
+    async def event_source():
+        if is_mcp_in_config(request.mcp_id):
+            payload = {
+                "type": "done",
+                "success": True,
+                "message": f"{entry.name} is already installed",
+                "mcp_id": request.mcp_id,
+                "details": "Already present in claude_desktop_config.json",
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
+            return
+        async for event in install_mcp_stream(entry, request.config_values):
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(
+        event_source(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.get("/docker/health", response_model=DockerHealth)
+async def docker_health_check() -> DockerHealth:
+    """Check whether Docker is installed and its daemon is running."""
+    return DockerHealth(**await docker_health())
 
 
 @router.delete("/{mcp_id}", response_model=InstallResponse)

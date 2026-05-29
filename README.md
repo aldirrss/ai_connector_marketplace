@@ -34,6 +34,10 @@ ai_connector_marketplace/
 │   ├── models/
 │   │   └── mcp.py              ← Pydantic schemas
 │   └── requirements.txt
+├── frontend/                   ← Next.js + Tailwind web UI (see frontend/README.md)
+│   ├── app/                    ← App Router pages + providers
+│   ├── components/             ← Cards, sidebar, detail panel, install log, etc.
+│   └── lib/                    ← Typed API client + types mirroring backend models
 ├── registry/
 │   └── mcps.json               ← MCP catalog (add new entries here)
 ├── docs/                       ← Design docs and plans
@@ -65,6 +69,17 @@ cd ai_connector_marketplace
 Backend starts at **http://localhost:8000**
 API docs at **http://localhost:8000/docs**
 
+### Run the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+UI starts at **http://localhost:3000** (talks to the backend on :8000). See
+[`frontend/README.md`](frontend/README.md) for details.
+
 ---
 
 ## API Reference
@@ -87,17 +102,28 @@ API docs at **http://localhost:8000/docs**
 | `transport` | string | Filter: npm, pip, http, sse, docker |
 | `category` | string | Filter by category |
 | `official_only` | bool | Official MCPs only |
+| `free_only` | bool | Free MCPs only |
 | `installed_only` | bool | Installed MCPs only |
+| `web_only` | bool | Claude Web-compatible MCPs only |
 
 ### Installer
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/install/` | Install an MCP |
+| `POST` | `/install/stream` | Install an MCP, streaming live progress (SSE) |
 | `DELETE` | `/install/{id}` | Remove MCP from config |
 | `GET` | `/install/status/{id}` | Check install status |
 | `GET` | `/install/installed/all` | List all installed MCP IDs |
 | `GET` | `/install/dependencies/check` | Check npm/pip/docker availability |
+| `GET` | `/install/docker/health` | Check Docker install + daemon status |
+
+**`POST /install/stream`** returns `text/event-stream`. Each event's `data:` is a JSON object:
+
+```
+data: {"type": "log", "line": "$ npm install -g …"}
+data: {"type": "done", "success": true, "message": "…", "mcp_id": "…", "details": "…"}
+```
 
 **Install request body:**
 
@@ -148,9 +174,15 @@ Edit `registry/mcps.json` and add an entry:
   "official": false,
   "free": true,
   "homepage": "https://example.com",
-  "icon": "ti-plug"
+  "icon": "ti-plug",
+  "claude_web_compatible": false,
+  "platforms": ["desktop"]
 }
 ```
+
+> `claude_web_compatible` and `platforms` are optional (default `false` / `["desktop"]`).
+> Set `claude_web_compatible: true` and `platforms: ["desktop", "web"]` for remote
+> (http/sse) MCPs that expose a reachable URL — these surface a "Use on Claude Web" guide in the UI.
 
 Then call `POST /registry/reload` to pick up the change without restarting.
 
@@ -189,12 +221,19 @@ A timestamped backup is created before every write. The last 5 backups are kept.
 - [x] Auto config manager (read/write/backup)
 - [x] GitHub Actions CI
 
-### Phase 2 — Frontend
-- [ ] React/Next.js UI (card grid, search, install button)
-- [ ] Config forms for API keys
-- [ ] Real-time install log streaming
+### Phase 2 — Frontend ✅
+- [x] Next.js (App Router) + Tailwind UI (card grid, search, install button)
+- [x] Config forms for API keys (secret-aware)
+- [x] Sidebar filters, slide-out detail panel, dependency banner, restart reminder
 
-### Phase 3 — Advanced
+### Phase 3 — Remote MCPs & Claude Web ✅
+- [x] `claude_web_compatible` + `platforms` registry fields
+- [x] "Use on Claude Web" copy-URL + guide flow for remote MCPs
+- [x] Per-platform compatibility badges + "Works on Claude Web" filter
+- [x] Real-time install log streaming via SSE
+- [x] Docker daemon health check before docker installs
+
+### Phase 4 — Advanced
 - [ ] Community registry sync from GitHub
 - [ ] One-click profiles (e.g. "Odoo Dev Stack")
 - [ ] Update checker

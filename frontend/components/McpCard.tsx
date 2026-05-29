@@ -1,5 +1,6 @@
 import type { MCPWithStatus } from "@/lib/types";
 import { TransportBadge } from "./TransportBadge";
+import { PlatformBadges } from "./PlatformBadges";
 
 export function McpCard({
   mcp,
@@ -39,7 +40,11 @@ export function McpCard({
         {mcp.description}
       </p>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-3">
+        <PlatformBadges platforms={mcp.platforms} />
+      </div>
+
+      <div className="mt-3 flex items-center justify-between">
         <TransportBadge transport={mcp.transport} />
         <div className="flex items-center gap-3 text-xs text-slate-500">
           {mcp.official && (
