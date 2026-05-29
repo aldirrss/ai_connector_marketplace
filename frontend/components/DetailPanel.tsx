@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { MCPWithStatus, DockerHealth } from "@/lib/types";
+import type { MCPWithStatus, DockerHealth, UpdateInfo } from "@/lib/types";
+import { api } from "@/lib/api";
 import { TransportBadge } from "./TransportBadge";
 import { InstallForm } from "./InstallForm";
 import { PlatformBadges } from "./PlatformBadges";
@@ -32,27 +33,52 @@ export function DetailPanel({
   mcp,
   installing,
   uninstalling,
+  savingConfig,
   installLog,
   dockerHealth,
+  updateInfo,
   onClose,
   onInstall,
   onUninstall,
+  onSaveConfig,
 }: {
   mcp: MCPWithStatus | null;
   installing: boolean;
   uninstalling: boolean;
+  savingConfig: boolean;
   installLog: string[];
   dockerHealth?: DockerHealth;
+  updateInfo?: UpdateInfo;
   onClose: () => void;
   onInstall: (values: Record<string, string>) => void;
   onUninstall: () => void;
+  onSaveConfig: (values: Record<string, string>) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
+  const [editLoading, setEditLoading] = useState(false);
 
-  // Reset the form view whenever the selected MCP changes.
+  // Reset transient views whenever the selected MCP changes.
   useEffect(() => {
     setShowForm(false);
+    setEditMode(false);
+    setEditValues({});
   }, [mcp?.id]);
+
+  async function openEditor() {
+    if (!mcp) return;
+    setEditLoading(true);
+    try {
+      const cfg = await api.getConfig(mcp.id);
+      setEditValues(cfg.current_values);
+    } catch {
+      setEditValues({});
+    } finally {
+      setEditLoading(false);
+      setEditMode(true);
+    }
+  }
 
   const open = mcp !== null;
   const hasConfig = mcp ? Object.keys(mcp.config_schema).length > 0 : false;
@@ -138,6 +164,29 @@ export function DetailPanel({
                 <PlatformBadges platforms={mcp.platforms} size="md" />
               </div>
 
+              {mcp.is_installed && updateInfo && updateInfo.installed_version && (
+                <p
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${
+                    updateInfo.update_available
+                      ? "bg-amber-50 text-amber-800"
+                      : "bg-slate-50 text-slate-500"
+                  }`}
+                >
+                  <i
+                    className={`ti ${updateInfo.update_available ? "ti-arrow-up-circle" : "ti-circle-check"}`}
+                    aria-hidden
+                  />
+                  {updateInfo.update_available ? (
+                    <span>
+                      Update available: {updateInfo.installed_version} →{" "}
+                      <span className="font-semibold">{updateInfo.latest_version}</span>
+                    </span>
+                  ) : (
+                    <span>Up to date (v{updateInfo.installed_version})</span>
+                  )}
+                </p>
+              )}
+
               <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
                 {mcp.long_description || mcp.description}
               </p>
@@ -202,24 +251,58 @@ export function DetailPanel({
                   />
                 </div>
               )}
+
+              {editMode && hasConfig && mcp.is_installed && (
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <p className="mb-3 text-sm font-medium text-slate-700">
+                    Edit {mcp.name} config
+                  </p>
+                  <InstallForm
+                    schema={mcp.config_schema}
+                    installing={savingConfig}
+                    initialValues={editValues}
+                    submitLabel="Save changes"
+                    busyLabel="Saving…"
+                    onSubmit={onSaveConfig}
+                    onCancel={() => setEditMode(false)}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Sticky action bar */}
             <div className="sticky bottom-0 border-t border-slate-100 bg-white p-4">
               {mcp.is_installed ? (
-                <button
-                  type="button"
-                  onClick={onUninstall}
-                  disabled={uninstalling}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
-                >
-                  {uninstalling ? (
-                    <i className="ti ti-loader-2 animate-spin" aria-hidden />
-                  ) : (
-                    <i className="ti ti-trash" aria-hidden />
+                <div className="flex gap-2">
+                  {hasConfig && (
+                    <button
+                      type="button"
+                      onClick={openEditor}
+                      disabled={editLoading || editMode}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {editLoading ? (
+                        <i className="ti ti-loader-2 animate-spin" aria-hidden />
+                      ) : (
+                        <i className="ti ti-settings" aria-hidden />
+                      )}
+                      Edit config
+                    </button>
                   )}
-                  {uninstalling ? "Removing…" : "Uninstall"}
-                </button>
+                  <button
+                    type="button"
+                    onClick={onUninstall}
+                    disabled={uninstalling}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+                  >
+                    {uninstalling ? (
+                      <i className="ti ti-loader-2 animate-spin" aria-hidden />
+                    ) : (
+                      <i className="ti ti-trash" aria-hidden />
+                    )}
+                    {uninstalling ? "Removing…" : "Uninstall"}
+                  </button>
+                </div>
               ) : showForm && hasConfig ? null : (
                 <button
                   type="button"

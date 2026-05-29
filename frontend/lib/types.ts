@@ -78,6 +78,53 @@ export interface DockerHealth {
   message: string;
 }
 
+// ── Phase 4 ───────────────────────────────────────────────────────────────
+
+export interface Profile {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  mcp_ids: string[];
+}
+
+export interface ProfileInstallResult {
+  profile_id: string;
+  installed: string[];
+  already_installed: string[];
+  skipped_need_config: string[];
+  failed: string[];
+  message: string;
+}
+
+export interface UpdateInfo {
+  mcp_id: string;
+  package?: string | null;
+  installed_version?: string | null;
+  latest_version?: string | null;
+  update_available: boolean;
+}
+
+export interface ConfigEntryResponse {
+  mcp_id: string;
+  entry: Record<string, unknown>;
+  current_values: Record<string, string>;
+}
+
+export interface SyncInfo {
+  source?: string | null;
+  last_synced?: string | null;
+  active: boolean;
+  count?: number | null;
+}
+
+export interface SyncResult {
+  success: boolean;
+  message: string;
+  count: number;
+  source?: string | null;
+}
+
 // Query params accepted by GET /registry/
 export interface RegistryQuery {
   q?: string;

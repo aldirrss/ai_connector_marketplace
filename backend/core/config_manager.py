@@ -157,3 +157,45 @@ def get_optional_config_field(mcp_key: str) -> Optional[dict[str, Any]]:
     """Return the full config entry for a specific MCP, or None if not present."""
     config = read_config()
     return config.get("mcpServers", {}).get(mcp_key)
+
+
+def extract_config_values(
+    template: dict[str, Any], stored: dict[str, Any], field_keys: list[str]
+) -> dict[str, str]:
+    """
+    Best-effort reverse-map a stored config entry back to its {placeholder} values.
+
+    Walks the template and the stored entry in parallel. Where a template string
+    contains a single placeholder (e.g. "{db_path}" or "{ODOO_URL}/mcp"), the
+    corresponding stored string is matched to recover the user's value.
+
+    Only field_keys present in config_schema are returned. Values that can't be
+    recovered are simply omitted (the editor leaves those fields blank).
+    """
+    import re
+
+    recovered: dict[str, str] = {}
+
+    def _walk(tmpl: Any, val: Any) -> None:
+        if isinstance(tmpl, str) and isinstance(val, str):
+            # Find placeholders like {key} in the template string.
+            keys = re.findall(r"\{([^{}]+)\}", tmpl)
+            if len(keys) == 1 and keys[0] in field_keys:
+                key = keys[0]
+                # Turn the template into a regex with one capture group.
+                pattern = "^" + re.escape(tmpl).replace(
+                    re.escape("{" + key + "}"), "(.+)"
+                ) + "$"
+                m = re.match(pattern, val)
+                if m:
+                    recovered[key] = m.group(1)
+        elif isinstance(tmpl, list) and isinstance(val, list):
+            for t, v in zip(tmpl, val):
+                _walk(t, v)
+        elif isinstance(tmpl, dict) and isinstance(val, dict):
+            for k, t in tmpl.items():
+                if k in val:
+                    _walk(t, val[k])
+
+    _walk(template, stored)
+    return recovered

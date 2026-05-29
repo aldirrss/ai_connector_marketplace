@@ -8,12 +8,14 @@ export function CardGrid({
   loading,
   error,
   selectedId,
+  updateIds,
   onSelect,
 }: {
   mcps: MCPWithStatus[];
   loading: boolean;
   error: string | null;
   selectedId: string | null;
+  updateIds: Set<string>;
   onSelect: (mcp: MCPWithStatus) => void;
 }) {
   if (error) {
@@ -56,6 +58,7 @@ export function CardGrid({
           key={mcp.id}
           mcp={mcp}
           selected={mcp.id === selectedId}
+          updateAvailable={updateIds.has(mcp.id)}
           onClick={() => onSelect(mcp)}
         />
       ))}

@@ -6,6 +6,12 @@ import type {
   DependencyCheck,
   DockerHealth,
   InstallStreamEvent,
+  Profile,
+  ProfileInstallResult,
+  UpdateInfo,
+  ConfigEntryResponse,
+  SyncInfo,
+  SyncResult,
 } from "./types";
 
 export const API_BASE_URL =
@@ -157,6 +163,48 @@ export const api = {
     return request<InstallResponse>(`/install/${encodeURIComponent(mcp_id)}`, {
       method: "DELETE",
     });
+  },
+
+  // ── Phase 4 ──────────────────────────────────────────────────────────
+
+  profiles(): Promise<Profile[]> {
+    return request<Profile[]>("/registry/profiles");
+  },
+
+  installProfile(profile_id: string): Promise<ProfileInstallResult> {
+    return request<ProfileInstallResult>(
+      `/install/profile/${encodeURIComponent(profile_id)}`,
+      { method: "POST" },
+    );
+  },
+
+  updates(): Promise<UpdateInfo[]> {
+    return request<UpdateInfo[]>("/install/updates/check");
+  },
+
+  getConfig(mcp_id: string): Promise<ConfigEntryResponse> {
+    return request<ConfigEntryResponse>(
+      `/install/config/${encodeURIComponent(mcp_id)}`,
+    );
+  },
+
+  updateConfig(
+    mcp_id: string,
+    config_values: Record<string, string>,
+  ): Promise<InstallResponse> {
+    return request<InstallResponse>(
+      `/install/config/${encodeURIComponent(mcp_id)}`,
+      { method: "PUT", body: JSON.stringify({ config_values }) },
+    );
+  },
+
+  syncInfo(): Promise<SyncInfo> {
+    return request<SyncInfo>("/registry/sync/info");
+  },
+
+  sync(url?: string): Promise<SyncResult> {
+    const qs = url ? `?url=${encodeURIComponent(url)}` : "";
+    return request<SyncResult>(`/registry/sync${qs}`, { method: "POST" });
   },
 };
 

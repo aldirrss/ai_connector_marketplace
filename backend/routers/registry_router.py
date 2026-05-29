@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 
-from backend.models.mcp import MCPWithStatus, RegistryStats
+from backend.models.mcp import MCPWithStatus, RegistryStats, Profile, SyncInfo, SyncResult
 from backend.services.registry_service import (
     get_all_mcps,
     search_mcps,
@@ -9,7 +9,11 @@ from backend.services.registry_service import (
     get_registry_stats,
     get_categories,
     get_tags,
+    get_profiles,
+    get_profile_by_id,
     reload_registry,
+    sync_remote_registry,
+    get_sync_info,
 )
 from backend.core.config_manager import get_config_path_info
 
@@ -66,9 +70,48 @@ async def config_info() -> dict:
 
 @router.post("/reload")
 async def reload() -> dict:
-    """Force reload registry from disk."""
+    """Force reload registry from disk (also clears any synced override)."""
     reload_registry()
     return {"message": "Registry reloaded"}
+
+
+@router.get("/profiles", response_model=list[Profile])
+async def list_profiles() -> list[Profile]:
+    """Return curated one-click install bundles."""
+    return get_profiles()
+
+
+@router.get("/profiles/{profile_id}", response_model=Profile)
+async def get_profile(profile_id: str) -> Profile:
+    """Return a single profile by ID."""
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
+    return profile
+
+
+@router.get("/sync/info", response_model=SyncInfo)
+async def sync_info() -> SyncInfo:
+    """Report the community-registry sync source and status."""
+    return get_sync_info()
+
+
+@router.post("/sync", response_model=SyncResult)
+async def sync(url: Optional[str] = Query(None, description="Remote registry JSON URL")) -> SyncResult:
+    """Pull a community registry from a remote URL and apply it in memory."""
+    try:
+        count = await sync_remote_registry(url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch remote registry: {e}")
+    info = get_sync_info()
+    return SyncResult(
+        success=True,
+        message=f"Synced {count} MCPs from remote registry",
+        count=count,
+        source=info.source,
+    )
 
 
 @router.get("/{mcp_id}", response_model=MCPWithStatus)
