@@ -38,6 +38,9 @@ ai_connector_marketplace/
 │   ├── app/                    ← App Router pages + providers
 │   ├── components/             ← Cards, sidebar, detail panel, install log, etc.
 │   └── lib/                    ← Typed API client + types mirroring backend models
+├── src-tauri/                  ← Tauri v2 desktop shell (see docs/PACKAGING.md)
+│   ├── tauri.conf.json         ← App + bundle config
+│   └── src/                    ← Rust: backend launcher + system tray
 ├── registry/
 │   ├── mcps.json               ← MCP catalog (add new entries here)
 │   └── profiles.json           ← One-click install bundles (Phase 4)
@@ -80,6 +83,16 @@ npm run dev
 
 UI starts at **http://localhost:3000** (talks to the backend on :8000). See
 [`frontend/README.md`](frontend/README.md) for details.
+
+### Run as a desktop app (Tauri)
+
+```bash
+npm install        # installs the Tauri CLI at the repo root
+npm run tauri:dev  # opens a native window + launches the backend
+```
+
+Build installers (.dmg / .msi / .AppImage) with `npm run tauri:build`. Requires
+the Rust toolchain and per-OS system deps — see [`docs/PACKAGING.md`](docs/PACKAGING.md).
 
 ---
 
@@ -278,9 +291,10 @@ A timestamped backup is created before every write. The last 5 backups are kept.
 - [x] Config editor (edit an installed MCP without reinstall)
 - [ ] Multi-platform guides (Copilot / Gemini) — deferred
 
-### Phase 5 — Packaging
-- [ ] Tauri desktop app packaging
-- [ ] System tray, auto-start, cross-platform installers
+### Phase 5 — Packaging 🚧
+- [x] Tauri v2 desktop shell (bundles frontend, launches backend, system tray)
+- [x] Cross-platform installer config + build scripts
+- [ ] Auto-update + code signing (documented in `docs/PACKAGING.md`, needs secrets)
 
 ---
 

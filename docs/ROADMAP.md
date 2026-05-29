@@ -80,13 +80,21 @@ Extend beyond Claude Desktop to web-based clients.
 
 ---
 
-## Phase 5 — Packaging & Distribution
+## Phase 5 — Packaging & Distribution 🚧 SCAFFOLDED
 
-- [ ] Bundle backend + frontend into a single desktop app via **Tauri** (preferred — small binary) or Electron
-- [ ] System tray icon, auto-start option
-- [ ] Cross-platform installers (.dmg, .exe, .AppImage)
-- [ ] Auto-update mechanism
-- [ ] Code signing for macOS/Windows
+Tauri v2 desktop shell in `src-tauri/`. See [`docs/PACKAGING.md`](PACKAGING.md).
+
+- [x] Bundle backend + frontend into a single desktop app via **Tauri** — window
+      serves the static frontend export and launches the FastAPI backend as a
+      child process (`backend/` + `registry/` bundled as resources)
+- [x] System tray icon (Show / Quit) and clean backend shutdown on exit
+- [x] Cross-platform installer config (`bundle.targets: "all"` → .dmg / .msi+.exe / .AppImage+.deb+.rpm) and `tauri:dev` / `tauri:build` / `icon` scripts
+- [ ] Auto-update mechanism — needs `tauri-plugin-updater` + a signed release feed *(documented, not wired)*
+- [ ] Code signing for macOS/Windows — needs maintainer certificates/secrets *(documented)*
+
+> The GUI binary build was not run in the dev sandbox (no WebKit/system deps).
+> The web export, Tauri configs, icons, and Rust source are in place; building
+> installers requires the per-OS prerequisites in `docs/PACKAGING.md`.
 
 ---
 
