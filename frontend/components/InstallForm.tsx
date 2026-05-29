@@ -6,16 +6,24 @@ import type { ConfigFieldSchema } from "@/lib/types";
 export function InstallForm({
   schema,
   installing,
+  initialValues,
+  submitLabel = "Install",
+  busyLabel = "Installing…",
   onSubmit,
   onCancel,
 }: {
   schema: Record<string, ConfigFieldSchema>;
   installing: boolean;
+  initialValues?: Record<string, string>;
+  submitLabel?: string;
+  busyLabel?: string;
   onSubmit: (values: Record<string, string>) => void;
   onCancel: () => void;
 }) {
   const fields = Object.entries(schema);
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(
+    initialValues ?? {},
+  );
 
   const missingRequired = fields.some(
     ([key, field]) => field.required && !values[key]?.trim(),
@@ -73,7 +81,7 @@ export function InstallForm({
           ) : (
             <i className="ti ti-download" aria-hidden />
           )}
-          {installing ? "Installing…" : "Install"}
+          {installing ? busyLabel : submitLabel}
         </button>
         <button
           type="button"

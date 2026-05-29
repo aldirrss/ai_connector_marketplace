@@ -1,0 +1,30 @@
+[
+  {
+    "id": "odoo-dev-stack",
+    "name": "Odoo Dev Stack",
+    "description": "Everything you need for Odoo development: PostgreSQL access, local filesystem, and GitHub.",
+    "icon": "ti-stack-2",
+    "mcp_ids": ["postgres", "filesystem", "github"]
+  },
+  {
+    "id": "web-research",
+    "name": "Web Research",
+    "description": "Browse and search the web: Brave Search plus a headless browser via Puppeteer.",
+    "icon": "ti-world-search",
+    "mcp_ids": ["brave-search", "puppeteer"]
+  },
+  {
+    "id": "data-analyst",
+    "name": "Data Analyst",
+    "description": "Query and explore your data across PostgreSQL, SQLite, and Redis.",
+    "icon": "ti-chart-dots",
+    "mcp_ids": ["postgres", "sqlite", "redis"]
+  },
+  {
+    "id": "team-comms",
+    "name": "Team Comms",
+    "description": "Connect Claude to your team tools: Slack and Google Drive.",
+    "icon": "ti-messages",
+    "mcp_ids": ["slack", "google-drive"]
+  }
+]

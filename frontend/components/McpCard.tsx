@@ -5,10 +5,12 @@ import { PlatformBadges } from "./PlatformBadges";
 export function McpCard({
   mcp,
   selected,
+  updateAvailable = false,
   onClick,
 }: {
   mcp: MCPWithStatus;
   selected: boolean;
+  updateAvailable?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -29,11 +31,18 @@ export function McpCard({
             <p className="truncate text-xs text-slate-500">{mcp.author}</p>
           </div>
         </div>
-        {mcp.is_installed && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-            <i className="ti ti-circle-check" aria-hidden /> Installed
-          </span>
-        )}
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {mcp.is_installed && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              <i className="ti ti-circle-check" aria-hidden /> Installed
+            </span>
+          )}
+          {updateAvailable && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+              <i className="ti ti-arrow-up-circle" aria-hidden /> Update
+            </span>
+          )}
+        </div>
       </div>
 
       <p className="mt-3 line-clamp-2 flex-1 text-sm text-slate-600">

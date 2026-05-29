@@ -111,3 +111,59 @@ class DockerHealth(BaseModel):
     installed: bool
     daemon_running: bool
     message: str
+
+
+# ── Phase 4: Power Features ──────────────────────────────────────────────
+
+
+class Profile(BaseModel):
+    """A curated bundle of MCPs installed together with one click."""
+
+    id: str
+    name: str
+    description: str = ""
+    icon: str = "ti-stack-2"
+    mcp_ids: list[str] = Field(default_factory=list)
+
+
+class ProfileInstallResult(BaseModel):
+    profile_id: str
+    installed: list[str] = Field(default_factory=list)
+    already_installed: list[str] = Field(default_factory=list)
+    skipped_need_config: list[str] = Field(default_factory=list)
+    failed: list[str] = Field(default_factory=list)
+    message: str
+
+
+class UpdateInfo(BaseModel):
+    mcp_id: str
+    package: Optional[str] = None
+    installed_version: Optional[str] = None
+    latest_version: Optional[str] = None
+    update_available: bool = False
+
+
+class ConfigEntryResponse(BaseModel):
+    """Current config for an installed MCP plus best-effort decoded values."""
+
+    mcp_id: str
+    entry: dict[str, Any] = Field(default_factory=dict)
+    current_values: dict[str, str] = Field(default_factory=dict)
+
+
+class ConfigUpdateRequest(BaseModel):
+    config_values: dict[str, str] = Field(default_factory=dict)
+
+
+class SyncInfo(BaseModel):
+    source: Optional[str] = None
+    last_synced: Optional[str] = None
+    active: bool = False
+    count: Optional[int] = None
+
+
+class SyncResult(BaseModel):
+    success: bool
+    message: str
+    count: int = 0
+    source: Optional[str] = None

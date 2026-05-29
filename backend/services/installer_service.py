@@ -3,11 +3,22 @@ import logging
 import shutil
 from typing import AsyncGenerator, Optional
 
-from backend.models.mcp import MCPEntry, InstallResponse, TransportType, InstallType
+import httpx
+
+from backend.models.mcp import (
+    MCPEntry,
+    InstallResponse,
+    TransportType,
+    InstallType,
+    UpdateInfo,
+    Profile,
+    ProfileInstallResult,
+)
 from backend.core.config_manager import (
     add_mcp_to_config,
     remove_mcp_from_config,
     build_claude_config_entry,
+    is_mcp_in_config,
 )
 
 logger = logging.getLogger(__name__)
@@ -371,6 +382,146 @@ async def check_dependencies() -> dict[str, bool]:
     """Check which install tools are available on the system."""
     tools = ["npm", "npx", "pip", "pip3", "uvx", "uv", "docker"]
     return {tool: _is_tool_available(tool) for tool in tools}
+
+
+async def update_mcp_config(
+    entry: MCPEntry, config_values: dict[str, str]
+) -> InstallResponse:
+    """
+    Re-apply an installed MCP's config with new values (Phase 4 config editor).
+
+    Rebuilds the mcpServers entry from the registry template + values and writes
+    it, overwriting the existing entry. No package (re)install is performed.
+    """
+    if not is_mcp_in_config(entry.id):
+        return InstallResponse(
+            success=False,
+            message=f"{entry.name} is not installed",
+            mcp_id=entry.id,
+            details="Install it first before editing its config.",
+        )
+
+    claude_config_template = entry.claude_config.model_dump(exclude_none=True)
+    config_entry = build_claude_config_entry(claude_config_template, config_values)
+    written = add_mcp_to_config(entry.id, config_entry)
+    if not written:
+        return InstallResponse(
+            success=False,
+            message=f"Could not update {entry.name} config",
+            mcp_id=entry.id,
+            details="Check file permissions on claude_desktop_config.json",
+        )
+    return InstallResponse(
+        success=True,
+        message=f"{entry.name} config updated. Restart Claude Desktop to apply.",
+        mcp_id=entry.id,
+    )
+
+
+async def install_profile(profile: Profile) -> ProfileInstallResult:
+    """
+    Install every config-free MCP in a profile with one call.
+
+    MCPs that require configuration are reported in `skipped_need_config` so the
+    user can install them individually via the normal form flow.
+    """
+    from backend.services.registry_service import get_mcp_by_id
+
+    installed: list[str] = []
+    already: list[str] = []
+    skipped: list[str] = []
+    failed: list[str] = []
+
+    for mcp_id in profile.mcp_ids:
+        entry = get_mcp_by_id(mcp_id)
+        if entry is None:
+            failed.append(mcp_id)
+            continue
+        if is_mcp_in_config(mcp_id):
+            already.append(mcp_id)
+            continue
+        if any(field.required for field in entry.config_schema.values()):
+            skipped.append(mcp_id)
+            continue
+        result = await install_mcp(entry, {})
+        (installed if result.success else failed).append(mcp_id)
+
+    parts = []
+    if installed:
+        parts.append(f"installed {len(installed)}")
+    if already:
+        parts.append(f"{len(already)} already installed")
+    if skipped:
+        parts.append(f"{len(skipped)} need configuration")
+    if failed:
+        parts.append(f"{len(failed)} failed")
+    message = (
+        f"{profile.name}: " + ", ".join(parts) if parts else f"{profile.name}: nothing to do"
+    )
+    if installed or already:
+        message += ". Restart Claude Desktop to apply."
+
+    return ProfileInstallResult(
+        profile_id=profile.id,
+        installed=installed,
+        already_installed=already,
+        skipped_need_config=skipped,
+        failed=failed,
+        message=message,
+    )
+
+
+async def get_latest_version(entry: MCPEntry) -> Optional[str]:
+    """Look up the latest published version of an MCP's package (npm/PyPI)."""
+    if not entry.package:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            if entry.transport == TransportType.npm:
+                r = await client.get(f"https://registry.npmjs.org/{entry.package}/latest")
+                if r.status_code == 200:
+                    return r.json().get("version")
+            elif entry.transport == TransportType.pip:
+                r = await client.get(f"https://pypi.org/pypi/{entry.package}/json")
+                if r.status_code == 200:
+                    return r.json().get("info", {}).get("version")
+    except Exception as e:
+        logger.debug("Latest-version lookup failed for %s: %s", entry.package, e)
+    return None
+
+
+async def check_updates() -> list[UpdateInfo]:
+    """
+    Compare installed MCP package versions against the latest published version.
+
+    Only inspects installed MCPs that have a `package` and a comparable
+    transport (npm/pip). npx-on-demand packages always run latest, so they have
+    no locally pinned version to compare.
+    """
+    from backend.services.registry_service import get_all_mcps
+
+    results: list[UpdateInfo] = []
+    for m in get_all_mcps(include_status=True):
+        if not m.is_installed or not m.package:
+            continue
+        if m.transport not in (TransportType.npm, TransportType.pip):
+            continue
+        tool = "pip" if m.transport == TransportType.pip else "npm"
+        installed_version = await get_package_version(tool, m.package)
+        latest = await get_latest_version(m)
+        update_available = bool(
+            installed_version and latest and installed_version != latest
+        )
+        results.append(
+            UpdateInfo(
+                mcp_id=m.id,
+                package=m.package,
+                installed_version=installed_version,
+                latest_version=latest,
+                update_available=update_available,
+            )
+        )
+    return results
 
 
 async def get_package_version(tool: str, package: str) -> Optional[str]:

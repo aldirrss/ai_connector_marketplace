@@ -39,7 +39,8 @@ ai_connector_marketplace/
 │   ├── components/             ← Cards, sidebar, detail panel, install log, etc.
 │   └── lib/                    ← Typed API client + types mirroring backend models
 ├── registry/
-│   └── mcps.json               ← MCP catalog (add new entries here)
+│   ├── mcps.json               ← MCP catalog (add new entries here)
+│   └── profiles.json           ← One-click install bundles (Phase 4)
 ├── docs/                       ← Design docs and plans
 ├── .github/
 │   ├── workflows/ci.yml        ← GitHub Actions CI
@@ -93,6 +94,10 @@ UI starts at **http://localhost:3000** (talks to the backend on :8000). See
 | `GET` | `/registry/stats` | Registry statistics |
 | `GET` | `/registry/categories` | All categories |
 | `GET` | `/registry/config-info` | Claude Desktop config path |
+| `GET` | `/registry/profiles` | One-click install bundles |
+| `GET` | `/registry/profiles/{id}` | A single profile |
+| `POST` | `/registry/sync` | Sync registry from a remote URL (`?url=` or `MARKETPLACE_REGISTRY_URL`) |
+| `GET` | `/registry/sync/info` | Community-sync source + status |
 
 **Query params for `GET /registry/`:**
 
@@ -117,6 +122,10 @@ UI starts at **http://localhost:3000** (talks to the backend on :8000). See
 | `GET` | `/install/installed/all` | List all installed MCP IDs |
 | `GET` | `/install/dependencies/check` | Check npm/pip/docker availability |
 | `GET` | `/install/docker/health` | Check Docker install + daemon status |
+| `POST` | `/install/profile/{id}` | One-click install a profile bundle |
+| `GET` | `/install/updates/check` | Compare installed vs latest package versions |
+| `GET` | `/install/config/{id}` | Read an installed MCP's config + decoded values |
+| `PUT` | `/install/config/{id}` | Edit an installed MCP's config (no reinstall) |
 
 **`POST /install/stream`** returns `text/event-stream`. Each event's `data:` is a JSON object:
 
@@ -188,6 +197,35 @@ Then call `POST /registry/reload` to pick up the change without restarting.
 
 ---
 
+## Profiles & Community Sync (Phase 4)
+
+**Profiles** are curated bundles installed with one click. Define them in `registry/profiles.json`:
+
+```json
+{
+  "id": "odoo-dev-stack",
+  "name": "Odoo Dev Stack",
+  "description": "PostgreSQL + Filesystem + GitHub",
+  "icon": "ti-stack-2",
+  "mcp_ids": ["postgres", "filesystem", "github"]
+}
+```
+
+Installing a profile registers all config-free members at once; members that need
+configuration are reported so you can install them individually.
+
+**Community sync** lets the catalog come from a remote JSON instead of the bundled file.
+Set the source via env var, then hit the **Sync** button (or `POST /registry/sync`):
+
+```bash
+export MARKETPLACE_REGISTRY_URL="https://example.com/mcps.json"
+```
+
+The remote payload may be a bare JSON list of MCP entries or `{ "mcps": [...] }`.
+`POST /registry/reload` reverts to the bundled catalog.
+
+---
+
 ## Transport Types
 
 | Transport | How it works | Example |
@@ -233,11 +271,16 @@ A timestamped backup is created before every write. The last 5 backups are kept.
 - [x] Real-time install log streaming via SSE
 - [x] Docker daemon health check before docker installs
 
-### Phase 4 — Advanced
-- [ ] Community registry sync from GitHub
-- [ ] One-click profiles (e.g. "Odoo Dev Stack")
-- [ ] Update checker
+### Phase 4 — Power Features ✅
+- [x] One-click profiles (e.g. "Odoo Dev Stack") — `registry/profiles.json`
+- [x] Community registry sync from a remote URL (`MARKETPLACE_REGISTRY_URL`)
+- [x] Update checker (npm / PyPI latest vs installed)
+- [x] Config editor (edit an installed MCP without reinstall)
+- [ ] Multi-platform guides (Copilot / Gemini) — deferred
+
+### Phase 5 — Packaging
 - [ ] Tauri desktop app packaging
+- [ ] System tray, auto-start, cross-platform installers
 
 ---
 

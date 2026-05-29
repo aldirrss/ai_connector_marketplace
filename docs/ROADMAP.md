@@ -70,13 +70,13 @@ Extend beyond Claude Desktop to web-based clients.
 
 ---
 
-## Phase 4 — Power Features
+## Phase 4 — Power Features ✅ MOSTLY COMPLETE
 
-- [ ] **One-click profiles** — bundles that install multiple MCPs at once (e.g. "Odoo Dev Stack" = PostgreSQL + Filesystem + GitHub). Define profiles in `registry/profiles.json`.
-- [ ] **Community registry sync** — pull the registry from a remote GitHub-hosted JSON so new MCPs appear without app updates; allow PRs to add MCPs.
-- [ ] **Update checker** — compare installed package versions against latest; surface "update available".
-- [ ] **Config editor** — let users edit an installed MCP's config values without uninstall/reinstall.
-- [ ] **Multi-platform guides** — "How to use this MCP on Copilot / Gemini" pages.
+- [x] **One-click profiles** — bundles that install multiple MCPs at once (e.g. "Odoo Dev Stack" = PostgreSQL + Filesystem + GitHub). Defined in `registry/profiles.json`; served at `GET /registry/profiles`, installed via `POST /install/profile/{id}` (config-free members install; ones needing config are reported for individual setup).
+- [x] **Community registry sync** — pull the registry from a remote JSON (`MARKETPLACE_REGISTRY_URL`) via `POST /registry/sync`; status at `GET /registry/sync/info`. `POST /registry/reload` reverts to the bundled catalog.
+- [x] **Update checker** — `GET /install/updates/check` compares installed npm/pip package versions against the latest published on the npm registry / PyPI; surfaces "update available" badges.
+- [x] **Config editor** — `GET /install/config/{id}` (with best-effort value decoding) + `PUT /install/config/{id}` let users edit an installed MCP's config values without uninstall/reinstall.
+- [ ] **Multi-platform guides** — "How to use this MCP on Copilot / Gemini" pages. *(deferred)*
 
 ---
 

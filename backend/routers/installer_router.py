@@ -9,17 +9,29 @@ from backend.models.mcp import (
     StatusResponse,
     InstallStatus,
     DockerHealth,
+    ProfileInstallResult,
+    UpdateInfo,
+    ConfigEntryResponse,
+    ConfigUpdateRequest,
 )
-from backend.services.registry_service import get_mcp_by_id
+from backend.services.registry_service import get_mcp_by_id, get_profile_by_id
 from backend.services.installer_service import (
     install_mcp,
     install_mcp_stream,
+    install_profile,
     uninstall_mcp,
+    update_mcp_config,
     check_dependencies,
+    check_updates,
     docker_health,
     get_package_version,
 )
-from backend.core.config_manager import is_mcp_in_config, get_installed_mcp_keys
+from backend.core.config_manager import (
+    is_mcp_in_config,
+    get_installed_mcp_keys,
+    get_optional_config_field,
+    extract_config_values,
+)
 
 router = APIRouter(prefix="/install", tags=["installer"])
 
@@ -86,6 +98,51 @@ async def install_stream(request: InstallRequest) -> StreamingResponse:
 async def docker_health_check() -> DockerHealth:
     """Check whether Docker is installed and its daemon is running."""
     return DockerHealth(**await docker_health())
+
+
+@router.post("/profile/{profile_id}", response_model=ProfileInstallResult)
+async def install_profile_endpoint(profile_id: str) -> ProfileInstallResult:
+    """
+    One-click install a profile (bundle of MCPs).
+
+    Config-free MCPs are installed; MCPs that need configuration are reported in
+    `skipped_need_config` so the user can install them via the normal form.
+    """
+    profile = get_profile_by_id(profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
+    return await install_profile(profile)
+
+
+@router.get("/updates/check", response_model=list[UpdateInfo])
+async def updates_check() -> list[UpdateInfo]:
+    """Compare installed MCP package versions against the latest published ones."""
+    return await check_updates()
+
+
+@router.get("/config/{mcp_id}", response_model=ConfigEntryResponse)
+async def get_config(mcp_id: str) -> ConfigEntryResponse:
+    """Return an installed MCP's current config entry + best-effort decoded values."""
+    entry = get_mcp_by_id(mcp_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail=f"MCP '{mcp_id}' not found in registry")
+    stored = get_optional_config_field(mcp_id)
+    if stored is None:
+        raise HTTPException(status_code=404, detail=f"{entry.name} is not installed")
+    template = entry.claude_config.model_dump(exclude_none=True)
+    current_values = extract_config_values(
+        template, stored, list(entry.config_schema.keys())
+    )
+    return ConfigEntryResponse(mcp_id=mcp_id, entry=stored, current_values=current_values)
+
+
+@router.put("/config/{mcp_id}", response_model=InstallResponse)
+async def update_config(mcp_id: str, request: ConfigUpdateRequest) -> InstallResponse:
+    """Re-apply an installed MCP's config with new values (no reinstall)."""
+    entry = get_mcp_by_id(mcp_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail=f"MCP '{mcp_id}' not found in registry")
+    return await update_mcp_config(entry, request.config_values)
 
 
 @router.delete("/{mcp_id}", response_model=InstallResponse)

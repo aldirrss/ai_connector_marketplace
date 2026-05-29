@@ -69,6 +69,7 @@ frontend/
 │   ├── PlatformBadges.tsx # Desktop / Web / Copilot / Gemini compatibility
 │   ├── ClaudeWebGuide.tsx # "Use on Claude Web" copy-URL + manual guide
 │   ├── InstallLog.tsx    # Live console for streamed install output
+│   ├── ProfileBar.tsx    # One-click install bundles (Phase 4)
 │   └── Toast.tsx         # Feedback + "restart Claude Desktop" reminder
 └── lib/
     ├── types.ts          # TS mirror of backend/models/mcp.py
@@ -86,6 +87,18 @@ frontend/
   render in a console in the detail panel.
 - **Docker daemon gate** — docker-transport installs are disabled with a warning
   when `GET /install/docker/health` reports the daemon is offline.
+
+## Phase 4 — Power Features
+
+- **Quick-install profiles** — a strip of curated bundles (`GET /registry/profiles`)
+  installed in one click via `POST /install/profile/{id}`.
+- **Update badges** — `GET /install/updates/check` flags installed MCPs with a newer
+  published version; the detail panel shows `installed → latest`.
+- **Config editor** — installed MCPs with a config schema get an "Edit config" button
+  that loads current values (`GET /install/config/{id}`) and re-applies them
+  (`PUT /install/config/{id}`) without reinstalling.
+- **Sync** button in the header pulls a remote community registry
+  (`POST /registry/sync`, needs `MARKETPLACE_REGISTRY_URL` on the backend).
 
 ## API contracts
 
