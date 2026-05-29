@@ -24,9 +24,10 @@ async def list_mcps(
     official_only: bool = Query(False, description="Show only official MCPs"),
     free_only: bool = Query(False, description="Show only free MCPs"),
     installed_only: bool = Query(False, description="Show only installed MCPs"),
+    web_only: bool = Query(False, description="Show only Claude Web-compatible MCPs"),
 ) -> list[MCPWithStatus]:
     """List all MCPs with optional search and filters."""
-    if any([q, transport, category, official_only, free_only, installed_only]):
+    if any([q, transport, category, official_only, free_only, installed_only, web_only]):
         return search_mcps(
             query=q,
             transport=transport,
@@ -34,6 +35,7 @@ async def list_mcps(
             official_only=official_only,
             free_only=free_only,
             installed_only=installed_only,
+            web_only=web_only,
         )
     return get_all_mcps()
 

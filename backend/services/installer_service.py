@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import shutil
-from typing import Optional
+from typing import AsyncGenerator, Optional
 
 from backend.models.mcp import MCPEntry, InstallResponse, TransportType, InstallType
 from backend.core.config_manager import (
@@ -40,6 +40,63 @@ async def _run_command(
 def _is_tool_available(tool: str) -> bool:
     """Check if a CLI tool is available in PATH."""
     return shutil.which(tool) is not None
+
+
+async def _stream_command(
+    cmd: list[str], timeout: int = 300
+) -> AsyncGenerator[tuple[str, object], None]:
+    """
+    Run a subprocess and yield its output line by line.
+
+    Yields ("line", str) for each output line (stdout+stderr merged), then a
+    final ("rc", int) with the return code.
+    """
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+    except FileNotFoundError as e:
+        yield "line", str(e)
+        yield "rc", 1
+        return
+
+    assert proc.stdout is not None
+    try:
+        while True:
+            raw = await asyncio.wait_for(proc.stdout.readline(), timeout=timeout)
+            if not raw:
+                break
+            yield "line", raw.decode("utf-8", errors="replace").rstrip("\n")
+        await asyncio.wait_for(proc.wait(), timeout=timeout)
+        yield "rc", proc.returncode or 0
+    except asyncio.TimeoutError:
+        logger.error("Command timed out: %s", " ".join(cmd))
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            pass
+        yield "line", "Command timed out"
+        yield "rc", 1
+
+
+async def docker_health() -> dict:
+    """Report whether Docker is installed and its daemon is reachable."""
+    if not _is_tool_available("docker"):
+        return {
+            "installed": False,
+            "daemon_running": False,
+            "message": "Docker not found. Install Docker Desktop from https://docker.com",
+        }
+    returncode, _, _ = await _run_command(["docker", "info"])
+    if returncode != 0:
+        return {
+            "installed": True,
+            "daemon_running": False,
+            "message": "Docker is installed but the daemon is not running. Start Docker Desktop.",
+        }
+    return {"installed": True, "daemon_running": True, "message": "Docker is ready."}
 
 
 async def _install_npm(entry: MCPEntry) -> tuple[bool, str]:
@@ -102,7 +159,7 @@ async def _install_docker(entry: MCPEntry) -> tuple[bool, str]:
 
 async def _install_url(entry: MCPEntry) -> tuple[bool, str]:
     """HTTP/SSE — no installation needed, just register the URL in config."""
-    return True, f"HTTP/SSE server registered — no local install required"
+    return True, "HTTP/SSE server registered — no local install required"
 
 
 async def install_mcp(
@@ -160,6 +217,136 @@ async def install_mcp(
         message=f"{entry.name} installed successfully. Restart Claude Desktop to activate.",
         mcp_id=entry.id,
         details=detail,
+    )
+
+
+def _log(line: str) -> dict:
+    return {"type": "log", "line": line}
+
+
+def _done(success: bool, message: str, mcp_id: str, details: str = "") -> dict:
+    return {
+        "type": "done",
+        "success": success,
+        "message": message,
+        "mcp_id": mcp_id,
+        "details": details,
+    }
+
+
+async def install_mcp_stream(
+    entry: MCPEntry, config_values: dict[str, str]
+) -> AsyncGenerator[dict, None]:
+    """
+    Streaming variant of install_mcp.
+
+    Yields event dicts:
+      {"type": "log", "line": str}                      — progress / subprocess output
+      {"type": "done", "success": bool, "message": ...} — terminal result
+
+    Mirrors install_mcp's behaviour but surfaces live npm/pip/docker output.
+    """
+    logger.info("Streaming install: %s (transport=%s)", entry.id, entry.transport)
+    yield _log(f"Installing {entry.name} (transport: {entry.transport.value})…")
+
+    success = True
+    detail = ""
+    rc = 0
+
+    if entry.install_type == InstallType.uvx:
+        if not _is_tool_available("uvx") and not _is_tool_available("uv"):
+            success, detail = False, "uv/uvx not found. Install from https://astral.sh/uv"
+        else:
+            detail = f"uvx package '{entry.package}' ready (runs on demand via uvx)"
+            yield _log(detail)
+
+    elif entry.transport == TransportType.npm:
+        if not _is_tool_available("npx") and not _is_tool_available("npm"):
+            success, detail = False, "npm/npx not found. Install Node.js from https://nodejs.org"
+        elif entry.install_type == InstallType.npx:
+            detail = f"npx package '{entry.package}' ready (runs on demand via npx)"
+            yield _log(detail)
+        else:
+            yield _log(f"$ npm install -g {entry.package}")
+            async for kind, payload in _stream_command(["npm", "install", "-g", entry.package]):
+                if kind == "line":
+                    yield _log(str(payload))
+                else:
+                    rc = int(payload)  # type: ignore[arg-type]
+            success = rc == 0
+            detail = (
+                f"Installed {entry.package} globally via npm"
+                if success
+                else "npm install failed — see log above"
+            )
+
+    elif entry.transport == TransportType.pip:
+        if not _is_tool_available("pip") and not _is_tool_available("pip3"):
+            success, detail = False, "pip not found. Install Python from https://python.org"
+        else:
+            pip_cmd = "pip3" if _is_tool_available("pip3") else "pip"
+            yield _log(f"$ {pip_cmd} install {entry.package}")
+            async for kind, payload in _stream_command([pip_cmd, "install", entry.package]):
+                if kind == "line":
+                    yield _log(str(payload))
+                else:
+                    rc = int(payload)  # type: ignore[arg-type]
+            success = rc == 0
+            detail = (
+                f"Installed {entry.package} via pip"
+                if success
+                else "pip install failed — see log above"
+            )
+
+    elif entry.transport == TransportType.docker:
+        if not _is_tool_available("docker"):
+            success, detail = False, "Docker not found. Install Docker Desktop from https://docker.com"
+        else:
+            yield _log("Checking Docker daemon…")
+            info_rc, _, _ = await _run_command(["docker", "info"])
+            if info_rc != 0:
+                success, detail = False, "Docker daemon is not running. Start Docker Desktop."
+            else:
+                yield _log(f"$ docker pull {entry.package}")
+                async for kind, payload in _stream_command(["docker", "pull", str(entry.package)]):
+                    if kind == "line":
+                        yield _log(str(payload))
+                    else:
+                        rc = int(payload)  # type: ignore[arg-type]
+                success = rc == 0
+                detail = (
+                    f"Pulled Docker image: {entry.package}"
+                    if success
+                    else "docker pull failed — see log above"
+                )
+
+    else:  # http / sse
+        detail = "Remote server — no local install required."
+        yield _log(detail)
+
+    if not success:
+        yield _done(False, f"Installation failed for {entry.name}", entry.id, detail)
+        return
+
+    yield _log("Writing claude_desktop_config.json…")
+    claude_config_template = entry.claude_config.model_dump(exclude_none=True)
+    config_entry = build_claude_config_entry(claude_config_template, config_values)
+    written = add_mcp_to_config(entry.id, config_entry)
+    if not written:
+        yield _done(
+            False,
+            f"Could not write {entry.name} to Claude config",
+            entry.id,
+            "Check file permissions on claude_desktop_config.json",
+        )
+        return
+
+    yield _log("Done.")
+    yield _done(
+        True,
+        f"{entry.name} installed successfully. Restart Claude Desktop to activate.",
+        entry.id,
+        detail,
     )
 
 

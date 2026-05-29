@@ -60,6 +60,11 @@ class MCPEntry(BaseModel):
     free: bool = True
     homepage: str = ""
     icon: str = "ti-plug"
+    # Phase 3: cross-platform compatibility metadata.
+    # claude_web_compatible: usable on claude.ai (web) — only remote http/sse URLs qualify.
+    # platforms: which AI clients this MCP can run on (e.g. ["desktop", "web"]).
+    claude_web_compatible: bool = False
+    platforms: list[str] = Field(default_factory=lambda: ["desktop"])
 
 
 class MCPWithStatus(MCPEntry):
@@ -97,5 +102,12 @@ class ClaudeConfigFile(BaseModel):
 class RegistryStats(BaseModel):
     total: int
     installed: int
+    web_compatible: int = 0
     by_transport: dict[str, int]
     by_category: dict[str, int]
+
+
+class DockerHealth(BaseModel):
+    installed: bool
+    daemon_running: bool
+    message: str

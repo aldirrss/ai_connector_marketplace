@@ -39,6 +39,8 @@ export interface MCPEntry {
   free: boolean;
   homepage: string;
   icon: string;
+  claude_web_compatible: boolean;
+  platforms: string[];
 }
 
 export interface MCPWithStatus extends MCPEntry {
@@ -61,12 +63,20 @@ export interface InstallResponse {
 export interface RegistryStats {
   total: number;
   installed: number;
+  web_compatible: number;
   by_transport: Record<string, number>;
   by_category: Record<string, number>;
 }
 
 // GET /install/dependencies/check
 export type DependencyCheck = Record<string, boolean>;
+
+// GET /install/docker/health
+export interface DockerHealth {
+  installed: boolean;
+  daemon_running: boolean;
+  message: string;
+}
 
 // Query params accepted by GET /registry/
 export interface RegistryQuery {
@@ -76,4 +86,19 @@ export interface RegistryQuery {
   official_only?: boolean;
   free_only?: boolean;
   installed_only?: boolean;
+  web_only?: boolean;
 }
+
+// Server-Sent Events emitted by POST /install/stream
+export interface InstallLogEvent {
+  type: "log";
+  line: string;
+}
+export interface InstallDoneEvent {
+  type: "done";
+  success: boolean;
+  message: string;
+  mcp_id: string;
+  details?: string;
+}
+export type InstallStreamEvent = InstallLogEvent | InstallDoneEvent;

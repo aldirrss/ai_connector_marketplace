@@ -21,15 +21,27 @@
     },
     "claude_config": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "{allowed_dir}"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "{allowed_dir}"
+      ]
     },
-    "tags": ["files", "dev", "official"],
+    "tags": [
+      "files",
+      "dev",
+      "official"
+    ],
     "category": "dev_tools",
     "stars": 4.8,
     "official": true,
     "free": true,
     "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
-    "icon": "ti-folder"
+    "icon": "ti-folder",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "github",
@@ -53,18 +65,29 @@
     },
     "claude_config": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "{GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
     },
-    "tags": ["dev", "vcs", "official"],
+    "tags": [
+      "dev",
+      "vcs",
+      "official"
+    ],
     "category": "dev_tools",
     "stars": 4.8,
     "official": true,
     "free": true,
     "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/github",
-    "icon": "ti-brand-github"
+    "icon": "ti-brand-github",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "postgres",
@@ -88,15 +111,27 @@
     },
     "claude_config": {
       "command": "python",
-      "args": ["-m", "mcp_server_postgres", "{connection_string}"]
+      "args": [
+        "-m",
+        "mcp_server_postgres",
+        "{connection_string}"
+      ]
     },
-    "tags": ["database", "sql", "official"],
+    "tags": [
+      "database",
+      "sql",
+      "official"
+    ],
     "category": "database",
     "stars": 4.6,
     "official": true,
     "free": true,
     "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/postgres",
-    "icon": "ti-database"
+    "icon": "ti-database",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "sqlite",
@@ -120,15 +155,27 @@
     },
     "claude_config": {
       "command": "uvx",
-      "args": ["mcp-server-sqlite", "--db-path", "{db_path}"]
+      "args": [
+        "mcp-server-sqlite",
+        "--db-path",
+        "{db_path}"
+      ]
     },
-    "tags": ["database", "sql", "official"],
+    "tags": [
+      "database",
+      "sql",
+      "official"
+    ],
     "category": "database",
     "stars": 4.5,
     "official": true,
     "free": true,
     "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/sqlite",
-    "icon": "ti-database"
+    "icon": "ti-database",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "brave-search",
@@ -152,18 +199,29 @@
     },
     "claude_config": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-brave-search"
+      ],
       "env": {
         "BRAVE_API_KEY": "{BRAVE_API_KEY}"
       }
     },
-    "tags": ["search", "ai", "official"],
+    "tags": [
+      "search",
+      "ai",
+      "official"
+    ],
     "category": "ai_search",
     "stars": 4.3,
     "official": true,
     "free": false,
     "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search",
-    "icon": "ti-world"
+    "icon": "ti-world",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "puppeteer",
@@ -179,15 +237,27 @@
     "config_schema": {},
     "claude_config": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ]
     },
-    "tags": ["automation", "dev", "browser", "official"],
+    "tags": [
+      "automation",
+      "dev",
+      "browser",
+      "official"
+    ],
     "category": "dev_tools",
     "stars": 4.5,
     "official": true,
     "free": true,
     "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/puppeteer",
-    "icon": "ti-browser"
+    "icon": "ti-browser",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "slack",
@@ -218,19 +288,29 @@
     },
     "claude_config": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-slack"
+      ],
       "env": {
         "SLACK_BOT_TOKEN": "{SLACK_BOT_TOKEN}",
         "SLACK_TEAM_ID": "{SLACK_TEAM_ID}"
       }
     },
-    "tags": ["communication", "official"],
+    "tags": [
+      "communication",
+      "official"
+    ],
     "category": "communication",
     "stars": 4.1,
     "official": true,
     "free": true,
     "homepage": "https://github.com/modelcontextprotocol/servers/tree/main/src/slack",
-    "icon": "ti-brand-slack"
+    "icon": "ti-brand-slack",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "google-drive",
@@ -247,13 +327,22 @@
     "claude_config": {
       "url": "https://drivemcp.googleapis.com/mcp"
     },
-    "tags": ["files", "communication", "official"],
+    "tags": [
+      "files",
+      "communication",
+      "official"
+    ],
     "category": "communication",
     "stars": 4.4,
     "official": true,
     "free": true,
     "homepage": "https://developers.google.com/workspace/mcp",
-    "icon": "ti-brand-google-drive"
+    "icon": "ti-brand-google-drive",
+    "claude_web_compatible": true,
+    "platforms": [
+      "desktop",
+      "web"
+    ]
   },
   {
     "id": "excalidraw",
@@ -270,13 +359,22 @@
     "claude_config": {
       "url": "https://mcp.excalidraw.com/mcp"
     },
-    "tags": ["design", "dev", "diagrams"],
+    "tags": [
+      "design",
+      "dev",
+      "diagrams"
+    ],
     "category": "dev_tools",
     "stars": 4.2,
     "official": false,
     "free": true,
     "homepage": "https://excalidraw.com",
-    "icon": "ti-pencil"
+    "icon": "ti-pencil",
+    "claude_web_compatible": true,
+    "platforms": [
+      "desktop",
+      "web"
+    ]
   },
   {
     "id": "redis",
@@ -300,18 +398,28 @@
     },
     "claude_config": {
       "command": "python",
-      "args": ["-m", "mcp_server_redis"],
+      "args": [
+        "-m",
+        "mcp_server_redis"
+      ],
       "env": {
         "REDIS_URL": "{REDIS_URL}"
       }
     },
-    "tags": ["database", "cache"],
+    "tags": [
+      "database",
+      "cache"
+    ],
     "category": "database",
     "stars": 4.0,
     "official": false,
     "free": true,
     "homepage": "https://github.com/modelcontextprotocol/servers",
-    "icon": "ti-server"
+    "icon": "ti-server",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "grafana",
@@ -342,15 +450,31 @@
     },
     "claude_config": {
       "command": "docker",
-      "args": ["run", "-p", "3001:3001", "-e", "GRAFANA_URL={GRAFANA_URL}", "-e", "GRAFANA_API_KEY={GRAFANA_API_KEY}", "mcp-grafana"]
+      "args": [
+        "run",
+        "-p",
+        "3001:3001",
+        "-e",
+        "GRAFANA_URL={GRAFANA_URL}",
+        "-e",
+        "GRAFANA_API_KEY={GRAFANA_API_KEY}",
+        "mcp-grafana"
+      ]
     },
-    "tags": ["monitoring", "data"],
+    "tags": [
+      "monitoring",
+      "data"
+    ],
     "category": "database",
     "stars": 3.9,
     "official": false,
     "free": true,
     "homepage": "https://github.com/modelcontextprotocol/servers",
-    "icon": "ti-chart-line"
+    "icon": "ti-chart-line",
+    "claude_web_compatible": false,
+    "platforms": [
+      "desktop"
+    ]
   },
   {
     "id": "odoo-local",
@@ -401,12 +525,21 @@
         "ODOO_PASSWORD": "{ODOO_PASSWORD}"
       }
     },
-    "tags": ["erp", "odoo", "local"],
+    "tags": [
+      "erp",
+      "odoo",
+      "local"
+    ],
     "category": "dev_tools",
     "stars": 4.9,
     "official": false,
     "free": true,
     "homepage": "https://lemacore.com",
-    "icon": "ti-building-store"
+    "icon": "ti-building-store",
+    "claude_web_compatible": true,
+    "platforms": [
+      "desktop",
+      "web"
+    ]
   }
 ]

@@ -45,3 +45,17 @@ export const TRANSPORT_TOOL: Record<TransportType, string | null> = {
   sse: null,
   docker: "docker",
 };
+
+// Known AI client platforms, shown as compatibility badges (Phase 3).
+export interface PlatformMeta {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+export const PLATFORMS: PlatformMeta[] = [
+  { key: "desktop", label: "Desktop", icon: "ti-device-desktop" },
+  { key: "web", label: "Web", icon: "ti-world" },
+  { key: "copilot", label: "Copilot", icon: "ti-brand-github-copilot" },
+  { key: "gemini", label: "Gemini", icon: "ti-sparkles" },
+];

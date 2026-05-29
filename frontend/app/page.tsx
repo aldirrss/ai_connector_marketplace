@@ -7,19 +7,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
-import type { MCPWithStatus } from "@/lib/types";
-import { Sidebar, type Filters } from "@/components/Sidebar";
+import type { MCPWithStatus, InstallStreamEvent } from "@/lib/types";
+import { Sidebar, EMPTY_FILTERS, type Filters } from "@/components/Sidebar";
 import { SearchBar } from "@/components/SearchBar";
 import { CardGrid } from "@/components/CardGrid";
 import { DetailPanel } from "@/components/DetailPanel";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { Toast, type ToastState } from "@/components/Toast";
-
-const EMPTY_FILTERS: Filters = {
-  transport: null,
-  category: null,
-  installedOnly: false,
-};
 
 export default function HomePage() {
   const queryClient = useQueryClient();
@@ -41,6 +35,7 @@ export default function HomePage() {
     transport: filters.transport ?? undefined,
     category: filters.category ?? undefined,
     installed_only: filters.installedOnly || undefined,
+    web_only: filters.webOnly || undefined,
   };
 
   const mcpsQuery = useQuery({
@@ -56,6 +51,12 @@ export default function HomePage() {
   const depsQuery = useQuery({
     queryKey: ["deps"],
     queryFn: api.dependencies,
+  });
+  const dockerHealthQuery = useQuery({
+    queryKey: ["docker-health"],
+    queryFn: api.dockerHealth,
+    // Daemon state can change while the app is open; re-check periodically.
+    refetchInterval: 15000,
   });
 
   // Poll installed status so cards reflect live state (roadmap: poll installed/all).
@@ -88,32 +89,40 @@ export default function HomePage() {
     queryClient.invalidateQueries({ queryKey: ["stats"] });
   }
 
-  const installMutation = useMutation({
-    mutationFn: ({
-      id,
-      values,
-    }: {
-      id: string;
-      values: Record<string, string>;
-    }) => api.install(id, values),
-    onSuccess: (res) => {
-      refreshAfterMutation();
-      if (res.success) {
-        setToast({
-          kind: "restart",
-          message: `${res.message} — restart Claude Desktop to apply.`,
-        });
+  // Streaming install state (POST /install/stream). We track which MCP is
+  // installing and accumulate its live log output for the detail panel console.
+  const [installingId, setInstallingId] = useState<string | null>(null);
+  const [installLog, setInstallLog] = useState<string[]>([]);
+  const [logOwnerId, setLogOwnerId] = useState<string | null>(null);
+
+  async function runInstall(id: string, values: Record<string, string>) {
+    setInstallLog([]);
+    setLogOwnerId(id);
+    setInstallingId(id);
+    const onEvent = (event: InstallStreamEvent) => {
+      if (event.type === "log") {
+        setInstallLog((prev) => [...prev, event.line]);
       } else {
-        setToast({ kind: "error", message: res.message });
+        refreshAfterMutation();
+        setToast({
+          kind: event.success ? "restart" : "error",
+          message: event.success
+            ? `${event.message} — restart Claude Desktop to apply.`
+            : event.message,
+        });
       }
-    },
-    onError: (err) => {
+    };
+    try {
+      await api.installStream(id, values, onEvent);
+    } catch (err) {
       setToast({
         kind: "error",
         message: err instanceof ApiError ? err.message : "Install failed.",
       });
-    },
-  });
+    } finally {
+      setInstallingId(null);
+    }
+  }
 
   const uninstallMutation = useMutation({
     mutationFn: (id: string) => api.uninstall(id),
@@ -175,12 +184,15 @@ export default function HomePage() {
 
       <DetailPanel
         mcp={selectedMcp}
-        installing={installMutation.isPending}
+        installing={!!selectedMcp && installingId === selectedMcp.id}
         uninstalling={uninstallMutation.isPending}
+        installLog={
+          selectedMcp && logOwnerId === selectedMcp.id ? installLog : []
+        }
+        dockerHealth={dockerHealthQuery.data}
         onClose={() => setSelectedId(null)}
         onInstall={(values) =>
-          selectedMcp &&
-          installMutation.mutate({ id: selectedMcp.id, values })
+          selectedMcp && runInstall(selectedMcp.id, values)
         }
         onUninstall={() =>
           selectedMcp && uninstallMutation.mutate(selectedMcp.id)

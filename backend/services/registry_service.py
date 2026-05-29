@@ -76,6 +76,7 @@ def search_mcps(
     official_only: bool = False,
     free_only: bool = False,
     installed_only: bool = False,
+    web_only: bool = False,
 ) -> list[MCPWithStatus]:
     """Filter MCPs by search query and/or filters."""
     mcps = get_all_mcps(include_status=True)
@@ -105,6 +106,9 @@ def search_mcps(
     if installed_only:
         mcps = [m for m in mcps if m.is_installed]
 
+    if web_only:
+        mcps = [m for m in mcps if m.claude_web_compatible]
+
     return mcps
 
 
@@ -122,6 +126,7 @@ def get_registry_stats() -> RegistryStats:
     return RegistryStats(
         total=len(mcps),
         installed=sum(1 for m in mcps if m.is_installed),
+        web_compatible=sum(1 for m in mcps if m.claude_web_compatible),
         by_transport=by_transport,
         by_category=by_category,
     )

@@ -7,7 +7,15 @@ export interface Filters {
   transport: TransportType | null;
   category: string | null;
   installedOnly: boolean;
+  webOnly: boolean;
 }
+
+export const EMPTY_FILTERS: Filters = {
+  transport: null,
+  category: null,
+  installedOnly: false,
+  webOnly: false,
+};
 
 function NavItem({
   active,
@@ -55,7 +63,10 @@ export function Sidebar({
   stats?: RegistryStats;
 }) {
   const noFilter =
-    !filters.transport && !filters.category && !filters.installedOnly;
+    !filters.transport &&
+    !filters.category &&
+    !filters.installedOnly &&
+    !filters.webOnly;
 
   return (
     <nav className="scroll-thin flex h-full w-60 shrink-0 flex-col gap-6 overflow-y-auto border-r border-slate-200 bg-white px-3 py-5">
@@ -74,19 +85,24 @@ export function Sidebar({
       <div className="space-y-1">
         <NavItem
           active={noFilter}
-          onClick={() => onChange({ transport: null, category: null, installedOnly: false })}
+          onClick={() => onChange({ ...EMPTY_FILTERS })}
           icon="ti-apps"
           label="All MCPs"
           count={stats?.total}
         />
         <NavItem
           active={filters.installedOnly}
-          onClick={() =>
-            onChange({ transport: null, category: null, installedOnly: true })
-          }
+          onClick={() => onChange({ ...EMPTY_FILTERS, installedOnly: true })}
           icon="ti-circle-check"
           label="Installed"
           count={stats?.installed}
+        />
+        <NavItem
+          active={filters.webOnly}
+          onClick={() => onChange({ ...EMPTY_FILTERS, webOnly: true })}
+          icon="ti-world"
+          label="Works on Claude Web"
+          count={stats?.web_compatible}
         />
       </div>
 
@@ -101,9 +117,8 @@ export function Sidebar({
               active={filters.transport === t}
               onClick={() =>
                 onChange({
+                  ...EMPTY_FILTERS,
                   transport: filters.transport === t ? null : t,
-                  category: null,
-                  installedOnly: false,
                 })
               }
               icon="ti-plug-connected"
@@ -126,9 +141,8 @@ export function Sidebar({
                 active={filters.category === c}
                 onClick={() =>
                   onChange({
-                    transport: null,
+                    ...EMPTY_FILTERS,
                     category: filters.category === c ? null : c,
-                    installedOnly: false,
                   })
                 }
                 icon="ti-category"
