@@ -167,3 +167,28 @@ class SyncResult(BaseModel):
     message: str
     count: int = 0
     source: Optional[str] = None
+
+
+class SystemDetection(BaseModel):
+    """Whether a registry MCP's underlying package is present on the system."""
+
+    mcp_id: str
+    name: str
+    transport: TransportType
+    package: Optional[str] = None
+    detected_on_system: bool = False
+    system_version: Optional[str] = None
+    registered_in_claude: bool = False
+    location: Optional[str] = None
+    note: Optional[str] = None
+
+
+class SystemDetectionReport(BaseModel):
+    """Aggregate result of scanning the local system for known MCP packages."""
+
+    scanned: int
+    detected: int
+    orphan_packages: list[str] = Field(default_factory=list)
+    missing_packages: list[str] = Field(default_factory=list)
+    items: list[SystemDetection] = Field(default_factory=list)
+    tools_available: dict[str, bool] = Field(default_factory=dict)

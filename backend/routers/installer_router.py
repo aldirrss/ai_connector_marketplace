@@ -13,6 +13,7 @@ from backend.models.mcp import (
     UpdateInfo,
     ConfigEntryResponse,
     ConfigUpdateRequest,
+    SystemDetectionReport,
 )
 from backend.services.registry_service import get_mcp_by_id, get_profile_by_id
 from backend.services.installer_service import (
@@ -23,6 +24,7 @@ from backend.services.installer_service import (
     update_mcp_config,
     check_dependencies,
     check_updates,
+    detect_system_installations,
     docker_health,
     get_package_version,
 )
@@ -185,6 +187,16 @@ async def install_status(mcp_id: str) -> StatusResponse:
 async def list_installed() -> list[str]:
     """Return list of all installed MCP IDs (from Claude Desktop config)."""
     return get_installed_mcp_keys()
+
+
+@router.get("/detect", response_model=SystemDetectionReport)
+async def detect_system() -> SystemDetectionReport:
+    """
+    Scan the local system (npm global, pip, docker images, uv tools) for registry
+    MCP packages already installed — including ones NOT yet registered in Claude
+    Desktop config (orphans the user can register with one click).
+    """
+    return await detect_system_installations()
 
 
 @router.get("/dependencies/check")

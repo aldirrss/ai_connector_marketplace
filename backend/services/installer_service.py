@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import shutil
 from typing import AsyncGenerator, Optional
@@ -13,6 +14,8 @@ from backend.models.mcp import (
     UpdateInfo,
     Profile,
     ProfileInstallResult,
+    SystemDetection,
+    SystemDetectionReport,
 )
 from backend.core.config_manager import (
     add_mcp_to_config,
@@ -522,6 +525,175 @@ async def check_updates() -> list[UpdateInfo]:
             )
         )
     return results
+
+
+async def _list_npm_global() -> dict[str, str]:
+    """Return {package_name: version} for npm global installs (empty on failure)."""
+    if not _is_tool_available("npm"):
+        return {}
+    rc, out, _ = await _run_command(
+        ["npm", "list", "-g", "--depth=0", "--json"], timeout=30
+    )
+    if rc != 0 or not out:
+        return {}
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return {}
+    return {
+        name: (info.get("version") or "") if isinstance(info, dict) else ""
+        for name, info in (data.get("dependencies") or {}).items()
+    }
+
+
+async def _list_pip_packages() -> dict[str, str]:
+    """Return {package_name_lower: version} for the active Python's pip (empty on failure)."""
+    pip = "pip3" if _is_tool_available("pip3") else ("pip" if _is_tool_available("pip") else None)
+    if not pip:
+        return {}
+    rc, out, _ = await _run_command([pip, "list", "--format=json"], timeout=30)
+    if rc != 0 or not out:
+        return {}
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return {}
+    return {
+        (item.get("name") or "").lower(): item.get("version") or ""
+        for item in data
+        if isinstance(item, dict)
+    }
+
+
+async def _list_docker_images() -> set[str]:
+    """Return set of docker image refs (repo and repo:tag) available locally."""
+    if not _is_tool_available("docker"):
+        return set()
+    rc, out, _ = await _run_command(
+        ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}"], timeout=15
+    )
+    if rc != 0:
+        return set()
+    images: set[str] = set()
+    for line in out.splitlines():
+        line = line.strip()
+        if not line or line.startswith("<none>"):
+            continue
+        images.add(line)
+        if ":" in line:
+            images.add(line.split(":", 1)[0])
+    return images
+
+
+async def _list_uv_tools() -> set[str]:
+    """Return set of installed `uv tool` names (uvx-persisted tools)."""
+    if not _is_tool_available("uv"):
+        return set()
+    rc, out, _ = await _run_command(["uv", "tool", "list"], timeout=15)
+    if rc != 0:
+        return set()
+    tools: set[str] = set()
+    for line in out.splitlines():
+        line = line.strip()
+        if not line or line.startswith("-"):
+            continue
+        first = line.split()[0]
+        if first:
+            tools.add(first.lower())
+    return tools
+
+
+async def detect_system_installations() -> SystemDetectionReport:
+    """
+    Scan the local system for registry MCP packages already present (npm/pip/docker/uvx),
+    independent of whether they are registered in claude_desktop_config.json.
+    """
+    from backend.services.registry_service import get_all_mcps
+
+    npm_pkgs, pip_pkgs, docker_imgs, uv_tools = await asyncio.gather(
+        _list_npm_global(),
+        _list_pip_packages(),
+        _list_docker_images(),
+        _list_uv_tools(),
+    )
+
+    tools_available = {
+        "npm": _is_tool_available("npm"),
+        "pip": _is_tool_available("pip") or _is_tool_available("pip3"),
+        "docker": _is_tool_available("docker"),
+        "uv": _is_tool_available("uv"),
+    }
+
+    items: list[SystemDetection] = []
+    orphan: list[str] = []
+    missing: list[str] = []
+
+    for m in get_all_mcps(include_status=True):
+        detected = False
+        version: Optional[str] = None
+        location: Optional[str] = None
+        note: Optional[str] = None
+        pkg = m.package
+
+        if m.transport == TransportType.npm and pkg:
+            if pkg in npm_pkgs:
+                detected = True
+                version = npm_pkgs[pkg] or None
+                location = "npm global"
+            elif m.install_type == InstallType.npx:
+                note = "npx runs on-demand; no persistent install required"
+        elif m.transport == TransportType.pip and pkg:
+            key = pkg.lower()
+            if key in pip_pkgs:
+                detected = True
+                version = pip_pkgs[key] or None
+                location = "pip (active Python)"
+            elif m.install_type == InstallType.uvx:
+                if pkg.lower() in uv_tools:
+                    detected = True
+                    location = "uv tool"
+                else:
+                    note = "uvx runs on-demand; no persistent install required"
+        elif m.transport == TransportType.docker and pkg:
+            if pkg in docker_imgs or any(
+                img == pkg or img.startswith(pkg + ":") for img in docker_imgs
+            ):
+                detected = True
+                location = "docker image"
+        elif m.transport in (TransportType.http, TransportType.sse):
+            note = "remote URL — nothing to install locally"
+
+        if detected and not m.is_installed:
+            orphan.append(m.id)
+        if m.is_installed and pkg and not detected and m.transport in (
+            TransportType.npm,
+            TransportType.pip,
+            TransportType.docker,
+        ) and m.install_type not in (InstallType.npx, InstallType.uvx):
+            missing.append(m.id)
+
+        items.append(
+            SystemDetection(
+                mcp_id=m.id,
+                name=m.name,
+                transport=m.transport,
+                package=pkg,
+                detected_on_system=detected,
+                system_version=version,
+                registered_in_claude=m.is_installed,
+                location=location,
+                note=note,
+            )
+        )
+
+    return SystemDetectionReport(
+        scanned=len(items),
+        detected=sum(1 for i in items if i.detected_on_system),
+        orphan_packages=orphan,
+        missing_packages=missing,
+        items=items,
+        tools_available=tools_available,
+    )
 
 
 async def get_package_version(tool: str, package: str) -> Optional[str]:

@@ -36,11 +36,13 @@ setup_venv() {
 }
 
 start_backend() {
+  local port="${PORT:-8765}"
   echo ""
-  echo "🚀  Starting backend on http://localhost:8000"
-  echo "📄  API docs available at http://localhost:8000/docs"
+  echo "🚀  Starting backend on http://localhost:${port}"
+  echo "📄  API docs available at http://localhost:${port}/docs"
+  echo "    (override with: PORT=xxxx ./start.sh)"
   echo ""
-  uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --log-level info
+  uvicorn backend.main:app --host 0.0.0.0 --port "${port}" --reload --log-level info
 }
 
 print_banner

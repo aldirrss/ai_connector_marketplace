@@ -49,7 +49,7 @@ fn spawn_backend(app: &tauri::AppHandle) -> Option<Child> {
             "--host",
             "127.0.0.1",
             "--port",
-            "8000",
+            "8765",
             "--log-level",
             "info",
         ])

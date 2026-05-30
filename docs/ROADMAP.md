@@ -98,6 +98,49 @@ Tauri v2 desktop shell in `src-tauri/`. See [`docs/PACKAGING.md`](PACKAGING.md).
 
 ---
 
+## Phase 6 — Claude Code Support 📋 PLANNED
+
+Extend the marketplace beyond Claude Desktop to also manage MCP servers for
+**Claude Code (CLI)**. Critical for Linux users (where Claude Desktop is not
+officially distributed) and for developers who run both clients.
+
+### Background
+- Claude Desktop config lives at OS-specific paths handled by
+  `core/config_manager.get_claude_config_path()`.
+- Claude Code stores user-scope config at `~/.claude.json` and supports
+  project-scope MCPs via `.mcp.json` in a repo root. The `~/.claude.json` file
+  also contains many non-MCP fields (`projects`, `theme`, telemetry, etc.) that
+  must be preserved on every write.
+
+### Goals
+- [ ] **Target switcher in UI** — pick Claude Desktop, Claude Code (user),
+      or Claude Code (project) as the active install target. Persist last choice.
+- [ ] **Multi-target config manager** — refactor `config_manager` so read/write
+      ops accept a `target` enum. Each target implements its own:
+      - path resolution
+      - safe merge (preserve sibling keys in `~/.claude.json`)
+      - backup strategy (don't bloat backups for the huge `~/.claude.json`)
+- [ ] **Project-scope `.mcp.json`** — detect when the backend is launched from
+      within a repo, surface "Install to this project" as a target.
+- [ ] **Schema differences** — verify each registry entry's `claude_config`
+      template is valid for both clients; add per-target overrides in the
+      registry if a server needs different invocation between Desktop and Code.
+- [ ] **Status detection** — extend `get_installed_mcp_keys()` to merge across
+      targets; mark each installed MCP with where it lives (badge: "Desktop",
+      "Code", "Project").
+- [ ] **Cross-target operations** — "copy MCP from Desktop → Code", "move from
+      user → project scope", etc.
+- [ ] **Restart guidance** — Claude Code picks up MCP changes on next session
+      start (not a process restart like Desktop). Update post-install hints
+      per target.
+
+### Non-goals for this phase
+- Auto-detecting which Claude Code project is "active" beyond the backend's
+  current working directory.
+- Editing Claude Code's non-MCP settings.
+
+---
+
 ## Non-Goals (Explicitly Out of Scope)
 
 - **Not a hosted SaaS.** This is a local tool. There is no cloud account, no multi-tenancy.
