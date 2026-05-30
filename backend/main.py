@@ -48,6 +48,8 @@ app.add_middleware(
         # Web dev server (Phase 2)
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
         # Tauri desktop webview origins (Phase 5). The packaged app serves the
         # static frontend from a custom protocol, not localhost:3000.
         "tauri://localhost",
